@@ -37,6 +37,7 @@ type Props = {
   description?: string | null
   /** As ordenações oferecidas, na ordem dos links; a busca só aceita as de `SEARCH_SORTS`. */
   sorts?: Sort[]
+  quickBuy?: boolean
   eager?: number
   sizes?: string
   labels?: Partial<ListingLabels>
@@ -47,7 +48,7 @@ type Props = {
  * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
  * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
-export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], eager = 4, sizes, labels, children, products, total, pages }: Props) {
+export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], quickBuy, eager = 4, sizes, labels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
   const href = (next: ListingState) => listingHref(base, next, extra)
   const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, SORTS[sort]])]
@@ -81,7 +82,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
         <Filters facets={facets} state={state} base={base} extra={extra} total={total} labels={t} />
 
         <div>
-          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} /> : <p className="empty">{t.empty}</p>}
+          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} quickBuy={quickBuy} /> : <p className="empty">{t.empty}</p>}
 
           {pages > 1 && (
             <nav aria-label={t.pagination} className="pagination">

@@ -3,24 +3,26 @@ import Link from 'next/link'
 import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
 import { Price } from './price'
+import { QuickBuy } from './quick-buy'
 import { Rating } from './rating'
 
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
 
 type GridProps = {
   products: CardProduct[]
+  quickBuy?: boolean
   /** Quantos cards carregam sem lazy loading: os que ficam acima da dobra. */
   eager?: number
   sizes?: string
 }
 
 /** Classes: grid e as de ProductCard. */
-export function ProductGrid({ products, eager = 0, sizes }: GridProps) {
+export function ProductGrid({ products, eager = 0, sizes, quickBuy }: GridProps) {
   return (
     <ul className="grid">
       {products.map((product, index) => (
         // Numa vitrine, o maior elemento da tela (LCP) costuma ser uma das duas primeiras fotos.
-        <ProductCard key={product.id} product={product} eager={index < eager} priority={index < Math.min(eager, 2)} sizes={sizes} />
+        <ProductCard key={product.id} product={product} eager={index < eager} priority={index < Math.min(eager, 2)} sizes={sizes} quickBuy={quickBuy} />
       ))}
     </ul>
   )
@@ -28,13 +30,14 @@ export function ProductGrid({ products, eager = 0, sizes }: GridProps) {
 
 type CardProps = {
   product: CardProduct
+  quickBuy?: boolean
   eager?: boolean
   priority?: boolean
   sizes?: string
 }
 
-/** Classes: card, card-media, card-tag, card-name e as de Flags e Rating. */
-export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES }: CardProps) {
+/** Classes: card, card-media, card-tag, card-name e as de Flags, Rating e QuickBuy. */
+export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES, quickBuy = false }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]
 
@@ -54,6 +57,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
         {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} /> : null}
       </Link>
       <Price prices={prices} />
+      {quickBuy && <QuickBuy product={product} />}
     </li>
   )
 }

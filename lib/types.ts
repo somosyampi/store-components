@@ -41,6 +41,10 @@ export type CardProduct = {
   flags?: { data: Flag[] }
   rating?: number | null
   total_approved_reviews?: number
+  /** O SKU do produto sem variações: é o que a compra rápida põe no carrinho. */
+  sku_id?: number
+  has_variations?: boolean
+  blocked_sale?: boolean
 }
 
 type When = { date: string }
