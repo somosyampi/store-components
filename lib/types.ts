@@ -13,6 +13,9 @@ export type Prices = {
 
 export type Image = { url: string }
 
+/** Selo que o lojista prende a produtos ("Lançamento"), com as cores escolhidas no cadastro. */
+export type Flag = { id: number; name: string; text_color?: string | null; background_color?: string | null }
+
 export type Sku = {
   id: number
   /** Código do SKU e código de barras (EAN/GTIN): só os dados estruturados os usam. */
@@ -28,7 +31,7 @@ export type Sku = {
 export type Variation = { id: number; name: string; values: { data: { id: number; value: string }[] } }
 
 /** O que um card de produto mostra. */
-export type CardProduct = { id: number; name: string; slug: string; images: { data: Image[] }; prices: { data: Prices } }
+export type CardProduct = { id: number; name: string; slug: string; images: { data: Image[] }; prices: { data: Prices }; flags?: { data: Flag[] } }
 
 /** URLs do carrinho no checkout da Yampi, entregues pelo whois da loja. */
 export type Checkout = { items: string; items_json: string; redirect_to: string; store_token: string }

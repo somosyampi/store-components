@@ -6,8 +6,9 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode 
 import { brl } from '../lib/format'
 import { fill } from '../lib/labels'
 import { tierOffer, type Tier } from '../lib/offers'
-import type { Image as Photo, Prices, Sku, Variation } from '../lib/types'
+import type { Flag, Image as Photo, Prices, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
+import { Flags } from './flags'
 import { CloseIcon, PixIcon, SearchIcon } from './icons'
 import { Price } from './price'
 
@@ -41,6 +42,7 @@ type Props = {
   skus: Sku[]
   /** Faixas de desconto por quantidade ("leve 2 com 5% off"). */
   tiers: Tier[]
+  flags?: Flag[]
   /** `sizes` da foto principal, conforme o layout do tema. */
   sizes?: string
   /** Tamanho das miniaturas, na proporção das fotos do tema. */
@@ -80,15 +82,29 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 }
 
 /**
- * A compra de um produto: galeria com zoom, preço, variações, desconto por quantidade e botão de
- * compra. Precisa de <CartProvider>. Enquanto está na tela, marca o <html> com `data-buy-bar`,
- * para o CSS do tema abrir espaço a um botão de compra preso ao pé da tela.
+ * A compra de um produto: galeria com zoom, selos, preço, variações, desconto por quantidade e
+ * botão de compra. Precisa de <CartProvider>. Enquanto está na tela, marca o <html> com
+ * `data-buy-bar`, para o CSS do tema abrir espaço a um botão de compra preso ao pé da tela.
  *
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
  * ampliada), zoom-photo, zoom-controls, product-info, product-price, pix, options, tiers,
- * tiers-title, buy. De uso geral: eyebrow, note, saving, tag, icon-button, button, sr-only.
+ * tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag, icon-button, button,
+ * sr-only.
  */
-export function ProductView({ name, brand, images, prices, variations, skus, tiers, sizes = '(min-width: 900px) 50vw, 100vw', thumb = { width: 64, height: 64 }, labels, children }: Props) {
+export function ProductView({
+  name,
+  brand,
+  images,
+  prices,
+  variations,
+  skus,
+  tiers,
+  flags,
+  sizes = '(min-width: 900px) 50vw, 100vw',
+  thumb = { width: 64, height: 64 },
+  labels,
+  children,
+}: Props) {
   const t = { ...LABELS, ...labels }
   const cart = useCart()
   // Valor escolhido em cada variação, na ordem do cadastro (ex.: cor, depois tamanho).
@@ -206,6 +222,7 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
       </div>
 
       <div className="product-info">
+        <Flags flags={flags} />
         {brand && <p className="eyebrow">{brand}</p>}
         <h1>{name}</h1>
 

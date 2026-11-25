@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { CardProduct } from '../lib/types'
+import { Flags } from './flags'
 import { Price } from './price'
 
 /** `sizes` da foto para uma grade de duas colunas no celular e quatro no desktop; informe o da grade do tema. */
@@ -34,7 +35,10 @@ type CardProps = {
   sizes?: string
 }
 
-/** Um produto na grade: foto, selo de desconto, nome e preço. Classes: card, card-media, card-tag, card-name. */
+/**
+ * Um produto na grade: foto, etiqueta de desconto, selos, nome e preço.
+ * Classes: card, card-media, card-tag, card-name e as de Flags.
+ */
 export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]
@@ -49,6 +53,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
           {prices.has_promotion && prices.percent_discount >= 1 && (
             <span className="card-tag">−{Math.round(prices.percent_discount)}%</span>
           )}
+          <Flags flags={product.flags?.data} />
         </span>
         <span className="card-name">{product.name}</span>
       </Link>
