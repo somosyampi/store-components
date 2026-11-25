@@ -16,13 +16,15 @@ type Props = { combos: Combo[]; sizes?: string; labels?: Partial<CombosLabels> }
 
 /** Classes: combos, combo, combo-items, combo-media, combo-name, combo-total e a de Price. De uso geral: eyebrow, note, saving, button. */
 export function Combos({ combos, sizes = '160px', labels }: Props) {
-  if (!combos.length) return null
+  // Produto sem SKU não tem preço nem o que pôr no carrinho: a oferta dele não aparece.
+  const offers = combos.filter((combo) => combo.products.data.every((product) => product.skus.data.length > 0))
+  if (!offers.length) return null
   const t = { ...LABELS, ...labels }
 
   return (
     <section className="combos">
       <h2>{t.title}</h2>
-      {combos.map((combo) => (
+      {offers.map((combo) => (
         <ComboOffer key={combo.id} combo={combo} sizes={sizes} t={t} />
       ))}
     </section>
@@ -32,9 +34,10 @@ export function Combos({ combos, sizes = '160px', labels }: Props) {
 function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: CombosLabels }) {
   const cart = useCart()
   const products = combo.products.data.map((product) => ({ ...product, sellable: product.skus.data.filter((sku) => !sku.blocked_sale) }))
-  // O produto com um único SKU à venda já vem escolhido.
-  const [picked, setPicked] = useState(() => products.map((product) => (product.sellable.length === 1 ? product.sellable[0].id : 0)))
-  const skus = products.map((product, index) => product.sellable.find((sku) => sku.id === picked[index]))
+  const [picked, setPicked] = useState<Record<number, number>>({})
+  // O produto com um único SKU à venda já vem escolhido. A cada renderização, e não só ao montar: os dados podem mudar com a página aberta.
+  const chosen = products.map((product) => picked[product.id] || (product.sellable.length === 1 ? product.sellable[0].id : 0))
+  const skus = products.map((product, index) => product.sellable.find((sku) => sku.id === chosen[index]))
   const available = products.every((product) => product.sellable.length > 0)
   // Antes da escolha, a conta usa o primeiro SKU à venda: os bloqueados podem ter outro preço.
   const offer = comboOffer(combo, products.map((product, index) => (skus[index] ?? product.sellable[0] ?? product.skus.data[0]).prices.data.price))
@@ -57,8 +60,8 @@ function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: Combo
                   <select
                     required
                     aria-label={product.name}
-                    value={picked[index] || ''}
-                    onChange={(event) => setPicked(picked.map((id, position) => (position === index ? Number(event.target.value) : id)))}
+                    value={chosen[index] || ''}
+                    onChange={(event) => setPicked({ ...picked, [product.id]: Number(event.target.value) })}
                   >
                     <option value="">{t.choose}</option>
                     {product.skus.data.map((sku) => (
