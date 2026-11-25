@@ -58,6 +58,10 @@ test('avaliações: a nota média e as avaliações da página; sem avaliação,
 
   const unrated = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], ratings: { average_rating: null, total: 0 } }))
   assert.equal('aggregateRating' in unrated, false)
+
+  const unsummarized = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], reviews: [review] }))
+  assert.equal('aggregateRating' in unsummarized, false)
+  assert.equal(unsummarized.review.length, 1)
 })
 
 test('produto com variações: um ProductGroup com uma variante por SKU, cada uma com o seu endereço', () => {

@@ -55,10 +55,9 @@ const codes = ({ sku, barcode }: Sku) => ({
 
 function rated(ratings: Input['ratings'], reviews: Review[]) {
   const value = Number(ratings?.average_rating)
-  if (!ratings?.total || !value) return {}
 
   return {
-    aggregateRating: { '@type': 'AggregateRating', ratingValue: Math.round(value * 10) / 10, reviewCount: ratings.total },
+    ...(ratings?.total && value && { aggregateRating: { '@type': 'AggregateRating', ratingValue: Math.round(value * 10) / 10, reviewCount: ratings.total } }),
     ...(reviews.length && {
       review: reviews.map((review) => ({
         '@type': 'Review',
