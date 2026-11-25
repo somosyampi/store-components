@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { kitPrice, quantityTiers, tierOffer, type Tier } from './offers.ts'
+import { kitPrice, quantityTiers, tierOffer, toKits, type Bundle, type Tier } from './offers.ts'
 
 test('desconto por quantidade: faixas da API e o valor que o carrinho cobra', () => {
   const tiers = quantityTiers({
@@ -33,4 +33,38 @@ test('kit: o preço de cada item segue a regra do kit', () => {
   assert.equal(kitPrice({ price_type: 'discount', price: 1620, discount: 5 }, 1603.8), 1523.61)
   assert.equal(kitPrice({ price_type: 'custom', price: 350, discount: 0 }, 499.9), 350)
   assert.equal(kitPrice({ price_type: 'sku', price: 559.9, discount: 0 }, 554.3), 554.3)
+})
+
+test('kits da API: o preço de cada item no kit e avulso; kit inativo ou com item indisponível fica de fora', () => {
+  const item = (id: number, price: number, extra = {}) => ({
+    id,
+    sku_id: id * 10,
+    price_type: 'discount',
+    price: 0,
+    discount: 5,
+    quantity: 1,
+    available: true,
+    sku: { data: { title: `Item ${id}`, prices: { data: { price } }, images: { data: [{ url: `https://img/${id}.png` }] } } },
+    ...extra,
+  })
+  const bundle = (id: number, items: Bundle['items']['data'], extra = {}): Bundle => ({ id, name: `Kit ${id}`, active: true, custom_shipping: true, shipping_type: 'free', items: { data: items }, ...extra })
+
+  const kits = toKits([
+    bundle(1, [item(1, 231.66), item(2, 1603.8, { quantity: 2 })]),
+    bundle(2, [item(3, 100)], { active: false }),
+    bundle(3, [item(4, 100), item(5, 100, { available: false })]),
+    bundle(4, [item(6, 100, { sku: undefined })]),
+  ])
+
+  assert.deepEqual(kits, [
+    {
+      id: 1,
+      name: 'Kit 1',
+      freeShipping: true,
+      items: [
+        { id: 1, skuId: 10, name: 'Item 1', image: 'https://img/1.png', quantity: 1, price: 220.08, full: 231.66 },
+        { id: 2, skuId: 20, name: 'Item 2', image: 'https://img/2.png', quantity: 2, price: 1523.61, full: 1603.8 },
+      ],
+    },
+  ])
 })

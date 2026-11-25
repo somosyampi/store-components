@@ -43,3 +43,49 @@ export function tierOffer(tier: Tier, price: number) {
 
 export const kitPrice = (item: { price_type: string; price: number; discount: number }, skuPrice: number) =>
   item.price_type === 'custom' ? item.price : item.price_type === 'discount' ? cents(skuPrice * (1 - item.discount / 100)) : skuPrice
+
+/** GET …/products/{id}/bundles */
+export type Bundle = {
+  id: number
+  name: string
+  active: boolean
+  custom_shipping: boolean
+  shipping_type: string
+  items: {
+    data: {
+      id: number
+      sku_id: number
+      price_type: string
+      price: number
+      discount: number
+      quantity: number
+      available: boolean
+      sku?: { data: { title: string; prices: { data: { price: number } }; images: { data: { url: string }[] } } }
+    }[]
+  }
+}
+
+/** `price` é o que o item custa dentro do kit e `full`, comprado avulso. */
+export type Kit = {
+  id: number
+  name: string
+  freeShipping: boolean
+  items: { id: number; skuId: number; name: string; image: string | null; quantity: number; price: number; full: number }[]
+}
+
+// O checkout não vende um kit com item indisponível.
+export const toKits = (bundles: Bundle[]): Kit[] =>
+  bundles
+    .filter((bundle) => bundle.active && bundle.items.data.every((item) => item.available && item.sku))
+    .map((bundle) => ({
+      id: bundle.id,
+      name: bundle.name,
+      freeShipping: bundle.custom_shipping && bundle.shipping_type === 'free',
+      items: bundle.items.data.flatMap((item) => {
+        const sku = item.sku?.data
+        if (!sku) return []
+        const full = sku.prices.data.price
+
+        return { id: item.id, skuId: item.sku_id, name: sku.title, image: sku.images.data[0]?.url ?? null, quantity: item.quantity, price: kitPrice(item, full), full }
+      }),
+    }))
