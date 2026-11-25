@@ -107,7 +107,12 @@ Como numerar:
 Ninguém faz commit direto na `main`. Toda mudança, até a deste arquivo, entra por um branch e
 um pull request, e o merge fica com quem revisa.
 
-- O pull request diz o que muda, por quê e como foi conferido: testes, tipos e, se mexe em
-  componente, as páginas de um tema.
+- A descrição do pull request é objetiva e cabe em uma tela. Em listas curtas e nesta ordem:
+  o que muda, um item por linha; por quê, só quando o motivo não está no próprio item; o que
+  um tema precisa trocar ao atualizar; e como foi conferido (testes, tipos e, se mexe em
+  componente, as páginas de um tema), em uma ou duas linhas.
+- Não entra na descrição: introdução, resumo no fim, o que os commits e o diff já mostram, a
+  história de como se chegou à solução, e tabela ou número que não muda a decisão de quem
+  revisa. Um limite conhecido só entra se quem revisa precisa dele para decidir.
 - Commits em português, um assunto por commit. A primeira linha é curta e no presente
   ("Põe…", "Enxuga…"); o corpo diz o que mudou e por quê.
