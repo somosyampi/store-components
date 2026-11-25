@@ -4,9 +4,10 @@ import type { CardProduct, Customization } from './types'
 export const quickBuySku = ({ sku_id, has_variations, blocked_sale }: Pick<CardProduct, 'sku_id' | 'has_variations' | 'blocked_sale'>) =>
   sku_id && has_variations === false && blocked_sale === false ? sku_id : null
 
+// A opção de uma lista vai como foi cadastrada: só o texto livre é filtrado.
 // Sem espaços no início: um valor só de espaços passaria pelo `required` do navegador e chegaria vazio ao checkout.
-export const cleanAnswer = (value: string, rule: Customization['allowed_values']) =>
-  (rule === 'letters' ? value.replace(/[^\p{L} ]/gu, '') : rule === 'numbers' ? value.replace(/\D/g, '') : value).trimStart()
+export const cleanAnswer = (value: string, { type, allowed_values: rule }: Pick<Customization, 'type' | 'allowed_values'>) =>
+  type === 'select' ? value : (rule === 'letters' ? value.replace(/[^\p{L} ]/gu, '') : rule === 'numbers' ? value.replace(/\D/g, '') : value).trimStart()
 
 /** `optional` é o `allow_sell_without_customization` do SKU. */
 export function toCustomization(fields: Pick<Customization, 'id'>[], answers: Record<number, string>, optional: boolean) {
