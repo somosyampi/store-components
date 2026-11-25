@@ -9,6 +9,7 @@ import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
 import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
+import { Groups, type Sibling } from './groups'
 import { CloseIcon, PixIcon, SearchIcon } from './icons'
 import { Price } from './price'
 import { Rating, REVIEWS_ID, type RatingLabels } from './rating'
@@ -37,6 +38,7 @@ const LABELS = {
   tiers: 'Leve mais, pague menos',
   units: '{count} unidades',
   each: '{value} cada',
+  groups: 'Outras opções',
   quantity: 'Quantidade',
   unavailable: 'Indisponível',
   choose: 'Selecione: {name}',
@@ -61,6 +63,7 @@ type Props = {
   cashbacks?: Cashback[]
   /** Com até quantas unidades em estoque o SKU escolhido avisa que está acabando; 0 desliga. */
   lowStock?: number
+  groups?: Sibling[]
   sizes?: string
   thumb?: { width: number; height: number }
   labels?: Partial<ProductViewLabels>
@@ -94,7 +97,7 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 /**
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
  * ampliada), zoom-photo, zoom-controls, product-info, product-rating, product-facts, product-price, installments,
- * cashback, pix, options, tiers, tiers-title, stock-low, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
+ * cashback, pix, options, tiers, tiers-title, stock-low, buy e as de Flags, Rating e Groups. De uso geral: eyebrow, note, saving, tag,
  * icon-button, button, sr-only. Enquanto está na tela, o <html> leva `data-buy-bar`.
  */
 export function ProductView({
@@ -111,6 +114,7 @@ export function ProductView({
   installments = [],
   cashbacks,
   lowStock = 5,
+  groups = [],
   sizes = '(min-width: 900px) 50vw, 100vw',
   thumb = { width: 64, height: 64 },
   labels,
@@ -292,6 +296,8 @@ export function ProductView({
           )}
           {cashback > 0 && <p className="cashback">{fill(t.cashback, { percent: cashback })}</p>}
         </div>
+
+        <Groups products={groups} title={t.groups} />
 
         {variations.map((variation, index) => (
           <fieldset key={variation.id} ref={index === picked.length ? toChoose : undefined} className="options" disabled={index > picked.length}>
