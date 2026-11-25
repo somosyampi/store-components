@@ -4,6 +4,9 @@ Componentes React sem estilo, e a lógica que eles usam, para lojas construídas
 públicas da Yampi. Os temas (aplicações Next.js, como o `headless-store`) instalam este pacote
 direto do GitHub, por tag, e dão a ele o visual e o vocabulário de cada loja.
 
+O repositório ainda não tem README nem licença: são decisões em aberto. Não crie nenhum dos
+dois sem pedirem.
+
 ## Como o pacote é consumido
 
 - O pacote é `@yampi/store-components`, em TypeScript e sem build: o tema o lista em
@@ -18,10 +21,11 @@ direto do GitHub, por tag, e dão a ele o visual e o vocabulário de cada loja.
 O tema escreve o CSS e escolhe os textos. O pacote entrega marcação, comportamento e
 acessibilidade. Por isso:
 
-1. **Nenhum CSS.** Nada de estilo de aparência embutido. Recurso nativo antes de JavaScript:
+1. **Nenhum CSS.** Nem arquivo de estilo, nem `style` embutido; a exceção é o que é dado da
+   loja, como a cor de uma amostra de filtro. Recurso nativo antes de JavaScript:
    `<dialog>`, Popover API, links e formulários.
-2. **Classes estáveis.** Cada componente lista no docblock as classes que emite
-   (`Classes: …`). Elas são a API de estilo: mantenha a lista em dia.
+2. **Classes estáveis.** Cada componente diz no docblock as classes que emite (`Classes: …`,
+   ou `Classe: …` quando é uma só). Elas são a API de estilo: mantenha a lista em dia.
 3. **Textos neutros e trocáveis.** Em português e sem o vocabulário de um segmento
    ("produtos" e "carrinho", nunca "peças" ou "sacola"). Ficam num objeto de textos por
    componente e o tema troca os que quiser pela prop `labels`. São sempre strings, com
@@ -35,15 +39,21 @@ acessibilidade. Por isso:
 6. **Server Components por padrão.** `'use client'` só onde há interação. Ler a URL num
    Client Component (`useSearchParams`) só num componente filho, sob `<Suspense>`, para não
    impedir o pré-render de quem o usa.
-7. **Rotas fixas**, definidas em `lib/routes.ts`: `/produto/{slug}`, `/busca`,
-   `/categoria/…`, `/colecao/…` e `/promocao/…`.
+7. **Rotas fixas.** O pacote gera links para `/produto/{slug}`, `/busca`, `/categoria/…`,
+   `/colecao/…` e `/promocao/…`, e o tema precisa ter essas rotas. O esquema de URLs das
+   vitrines (filtros, ordenação e página na query string) está em `lib/routes.ts`.
 
 ## Lógica (`lib/`)
 
-- Funções puras e sem dependências, com o teste ao lado (`*.test.ts`, rodado por
-  `node --test`).
-- As contas de `offers.ts` e a leitura do carrinho em `cart.ts` repetem o checkout da Yampi:
-  os valores esperados nos testes são os que o checkout cobrou.
+- Sem dependências. Contas e transformações (`offers`, `routes`, `cart`, `format`, `labels`,
+  `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado por `node --test`).
+- As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
+  são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
+  dela.
+- `search.ts` é o único módulo que chama a rede: o serviço de busca da Yampi. A rota
+  `/products` com termo registra o termo entre os "mais buscados" da loja, em produção. Por
+  isso as sugestões usam `/products/suggestions`, e um teste só busca termos que a loja já
+  tem (na loja modelo, "bolsa").
 - Os dados estruturados de `schema.ts` seguem a documentação do Google para lojas: página de
   compra usa `Offer`, e variações são um `ProductGroup` com um endereço por variante.
 
@@ -51,7 +61,7 @@ acessibilidade. Por isso:
 
 - Identificadores em inglês; comentários e textos em português.
 - Comente o porquê que não é óbvio (um comportamento da API, do navegador ou do React), não
-  o que o nome já diz. Cada componente tem um docblock curto, que termina na linha `Classes:`.
+  o que o nome já diz. O docblock de um componente é curto e termina nas classes dele.
 - Atalho deliberado leva `ponytail:`, com o limite dele e o caminho para ampliar.
 - O mínimo que resolve: sem abstração para um uso só e sem prop que nenhum tema pediu.
 - Antes de usar uma API do Next, leia a documentação da versão instalada, em
@@ -63,17 +73,20 @@ acessibilidade. Por isso:
 - Mudou um componente? Instale a cópia local num tema e confira no navegador as páginas que
   o usam: `npm install --install-links ../store-components`. Se a versão não mudou, apague
   antes `node_modules/@yampi/store-components`, ou o npm mantém a cópia antiga.
+- Esse comando deixa o `package.json` do tema apontando para `file:../store-components`. Não
+  faça commit dele assim: o tema só entra no repositório apontando para uma tag.
 
 ## Versões, tags e releases
 
 Os temas instalam uma tag, nunca a `main`. Toda mudança em `components/` ou `lib/` que um
-tema possa receber sai como uma versão nova:
+tema possa receber sai como uma versão nova, com tag e release, e não fica na `main` sem elas:
 
-1. Ajuste `version` no `package.json` e rode `npm install --package-lock-only`.
+1. `npm version X.Y.Z --no-git-tag-version` ajusta `package.json` e `package-lock.json`.
 2. Faça o commit, marque-o com a tag `vX.Y.Z` e envie a `main` e a tag.
-3. Crie a release da tag no GitHub (`gh release create vX.Y.Z`), com as notas nesta ordem:
-   **Mudanças incompatíveis** (dizendo o que o tema precisa trocar), **Novidades** e
-   **Correções**. Deixe de fora a seção que não tiver item.
+3. Crie a release da tag no GitHub (`gh release create vX.Y.Z`). As notas têm estas seções,
+   nesta ordem e sem as que ficarem vazias: **Mudanças incompatíveis** (dizendo o que o tema
+   precisa trocar), **Novidades**, **Correções**, **Sem mudança de comportamento** e, sempre,
+   **Como atualizar um tema**, com o comando do passo 4.
 4. Em cada tema: `npm install @yampi/store-components@github:somosyampi/store-components#vX.Y.Z`.
 
 Como numerar:
