@@ -22,14 +22,14 @@ export function Questions({ questions, labels }: Props) {
             <p>
               <strong>{question.name}</strong> <When date={question.created_at.date} />
             </p>
-            {/* `message`, e não `message_with_links`: aquele é HTML montado a partir do texto do visitante. */}
+            {/* `message`, e não `message_with_links`: na dúvida, aquele é HTML montado a partir do texto do visitante. */}
             <p>{question.message}</p>
             {question.answer && (
               <div className="answer">
                 <p>
                   <strong>{question.answer.name}</strong> <When date={question.answer.created_at.date} />
                 </p>
-                <p>{question.answer.message}</p>
+                {question.answer.message_with_links ? <p dangerouslySetInnerHTML={{ __html: question.answer.message_with_links }} /> : <p>{question.answer.message}</p>}
               </div>
             )}
           </li>

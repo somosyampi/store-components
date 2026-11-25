@@ -56,4 +56,10 @@ export type Ratings = { average_rating: string | number | null; total: number; g
 
 export type Checkout = { items: string; items_json: string; redirect_to: string; store_token: string }
 
-export type Question = { name: string; message: string; created_at: When; answer?: { name: string; message: string; created_at: When } | null }
+export type Question = {
+  name: string
+  message: string
+  created_at: When
+  /** `message_with_links` é HTML: a resposta da loja com os endereços já em links. */
+  answer?: { name: string; message: string; message_with_links?: string | null; created_at: When } | null
+}
