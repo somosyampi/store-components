@@ -45,15 +45,18 @@ acessibilidade. Por isso:
 
 ## Lógica (`lib/`)
 
-- Sem dependências. Contas e transformações (`offers`, `routes`, `cart`, `format`, `labels`,
-  `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado por `node --test`).
+- Sem dependências. Contas e transformações (`offers`, `prices`, `routes`, `cart`, `format`,
+  `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado por
+  `node --test`).
 - As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
   são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
   dela.
-- `search.ts` é o único módulo que chama a rede: o serviço de busca da Yampi. A rota
+- Só dois módulos chamam a rede. `search.ts` usa o serviço de busca da Yampi: a rota
   `/products` com termo registra o termo entre os "mais buscados" da loja, em produção. Por
   isso as sugestões usam `/products/suggestions`, e um teste só busca termos que a loja já
-  tem (na loja modelo, "bolsa").
+  tem (na loja modelo, "bolsa"). `prices.ts` usa a API de preços do checkout, a fonte do
+  preço e das parcelas de um produto: a parcela que a API principal devolve no detalhe do
+  produto não considera as promoções da loja.
 - Os dados estruturados de `schema.ts` seguem a documentação do Google para lojas: página de
   compra usa `Offer`, e variações são um `ProductGroup` com um endereço por variante.
 

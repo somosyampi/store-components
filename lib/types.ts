@@ -6,7 +6,7 @@ export type Prices = {
   price_sale: number
   has_promotion: boolean
   percent_discount: number
-  /** A API devolve `data: []` quando o produto não tem parcelamento. */
+  /** "12x de R$ 19,31 sem juros". Só o da API de preços do checkout considera as promoções da loja (lib/prices.ts). */
   installments?: { data?: { text?: string } }
   pix?: { price: number; discount_percent: number }
 }
@@ -15,6 +15,9 @@ export type Image = { url: string }
 
 /** Selo que o lojista prende a produtos ("Lançamento"), com as cores escolhidas no cadastro. */
 export type Flag = { id: number; name: string; text_color?: string | null; background_color?: string | null }
+
+/** Uma parcela, como a API de preços do checkout a devolve; `amount` é o total e `base_value` o preço sem juros. */
+export type Installment = { installment: number; text: string; amount: string | number; base_value: string | number; amount_formated: string }
 
 export type Sku = {
   id: number

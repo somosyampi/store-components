@@ -6,7 +6,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode 
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { tierOffer, type Tier } from '../lib/offers'
-import type { Flag, Image as Photo, Prices, Sku, Variation } from '../lib/types'
+import type { Flag, Image as Photo, Installment, Prices, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
 import { CloseIcon, PixIcon, SearchIcon } from './icons'
@@ -25,6 +25,8 @@ const LABELS = {
   months_one: '{count} mês',
   months_other: '{count} meses',
   installments: 'ou {text}',
+  allInstallments: 'Ver parcelas',
+  installmentTotal: 'total de {value}',
   pix: 'no Pix',
   saving: 'Economize {value}',
   off: '{percent}% off',
@@ -50,6 +52,8 @@ type Props = {
   flags?: Flag[]
   /** Garantia, em meses. */
   warranty?: number
+  /** As parcelas do preço do produto, uma a uma (`checkoutPrices`, em lib/prices.ts). */
+  installments?: Installment[]
   /** `sizes` da foto principal, conforme o layout do tema. */
   sizes?: string
   /** Tamanho das miniaturas, na proporção das fotos do tema. */
@@ -90,14 +94,14 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 
 /**
  * A compra de um produto: galeria com zoom, selos, ficha (referência, disponibilidade e garantia),
- * preço, variações, desconto por quantidade e botão de compra. Precisa de <CartProvider>.
- * Enquanto está na tela, marca o <html> com `data-buy-bar`, para o CSS do tema abrir espaço a um
- * botão de compra preso ao pé da tela.
+ * preço, parcelas, variações, desconto por quantidade e botão de compra. Precisa de
+ * <CartProvider>. Enquanto está na tela, marca o <html> com `data-buy-bar`, para o CSS do tema
+ * abrir espaço a um botão de compra preso ao pé da tela.
  *
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
- * ampliada), zoom-photo, zoom-controls, product-info, product-facts, product-price, pix, options,
- * tiers, tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag, icon-button,
- * button, sr-only.
+ * ampliada), zoom-photo, zoom-controls, product-info, product-facts, product-price, installments,
+ * pix, options, tiers, tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag,
+ * icon-button, button, sr-only.
  */
 export function ProductView({
   name,
@@ -109,6 +113,7 @@ export function ProductView({
   tiers,
   flags,
   warranty = 0,
+  installments = [],
   sizes = '(min-width: 900px) 50vw, 100vw',
   thumb = { width: 64, height: 64 },
   labels,
@@ -155,15 +160,19 @@ export function ProductView({
   const pending = variations[picked.length]
   // Nada à venda (todos os SKUs bloqueados), ou a combinação escolhida não pode ser comprada.
   const unavailable = skus.every((candidate) => candidate.blocked_sale) || (!pending && (!sku || sku.blocked_sale))
-  const price = sku?.prices.data ?? prices
+  // Com todos os SKUs no mesmo preço vale o do produto, que o tema pode ter lido da API de preços
+  // do checkout (lib/prices.ts); o preço do SKU só entra quando ele tem o seu.
+  const ownPrices = skus.some((candidate) => candidate.prices.data.price !== skus[0].prices.data.price)
+  const price = sku && ownPrices ? sku.prices.data : prices
   const photos = sku?.images.data.length ? sku.images.data : images
   const photo = photos[active] ?? photos[0]
   // Antes da escolha, a ficha mostra o primeiro SKU: ela não muda de altura ao escolher a variação.
   const facts = sku ?? skus[0]
-  // A API só informa o parcelamento do preço do produto: ele vale enquanto o SKU custar o mesmo.
-  // ponytail: SKU com preço próprio fica sem a linha de parcelas; para exibi-la, consulte
-  // GET /{alias}/public/catalog/products/{id}/installments?amount={preço}.
-  const installments = price.price === prices.price ? prices.installments?.data?.text : undefined
+  // O parcelamento é o do preço do produto: vale enquanto o SKU custar o mesmo.
+  // ponytail: SKU com preço próprio fica sem a linha e sem a lista de parcelas; a API de preços
+  // do checkout (lib/prices.ts) responde pelo produto, não pelo SKU.
+  const samePrice = price.price === prices.price
+  const installmentText = samePrice ? prices.installments?.data?.text : undefined
   // Só entram as faixas que de fato baixam o total, sobre o preço em exibição.
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
@@ -262,7 +271,21 @@ export function ProductView({
 
         <div className="product-price">
           <Price prices={price} />
-          {installments && <p className="note">{fill(t.installments, { text: installments })}</p>}
+          {installmentText && <p className="note">{fill(t.installments, { text: installmentText })}</p>}
+          {samePrice && installments.length > 1 && (
+            <details className="installments">
+              <summary>{t.allInstallments}</summary>
+              <ul>
+                {installments.map((row) => (
+                  <li key={row.installment}>
+                    {row.text}
+                    {/* Sem juros o total é o próprio preço. */}
+                    {Number(row.amount) > Number(row.base_value) && <span className="note"> {fill(t.installmentTotal, { value: row.amount_formated })}</span>}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           {price.pix && price.pix.discount_percent > 0 && (
             <p className="pix">
               <PixIcon />
