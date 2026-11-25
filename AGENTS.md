@@ -82,8 +82,9 @@ Os temas instalam uma tag, nunca a `main`. Toda mudança que um tema possa receb
 `components/`, em `lib/` ou na licença) sai como uma versão nova, com tag e release, e não
 fica na `main` sem elas:
 
-1. `npm version X.Y.Z --no-git-tag-version` ajusta `package.json` e `package-lock.json`.
-2. Faça o commit, marque-o com a tag `vX.Y.Z` e envie a `main` e a tag.
+1. No branch da mudança, `npm version X.Y.Z --no-git-tag-version` ajusta `package.json` e
+   `package-lock.json`. A versão nova vai no mesmo pull request.
+2. Depois do merge, marque o commit da `main` com a tag `vX.Y.Z` e envie a tag.
 3. Crie a release da tag no GitHub (`gh release create vX.Y.Z`). As notas têm estas seções,
    nesta ordem e sem as que ficarem vazias: **Mudanças incompatíveis** (dizendo o que o tema
    precisa trocar), **Novidades**, **Correções**, **Sem mudança de comportamento** e, sempre,
@@ -101,7 +102,12 @@ Como numerar:
 - Uma tag publicada não muda de lugar. Para corrigir uma versão, publique outra.
 - O que não chega ao pacote instalado (este arquivo, os testes) não pede versão nova.
 
-## Commits
+## Branches, pull requests e commits
 
-Em português, um assunto por commit. A primeira linha é curta e no presente ("Põe…",
-"Enxuga…"); o corpo diz o que mudou e por quê.
+Ninguém faz commit direto na `main`. Toda mudança, até a deste arquivo, entra por um branch e
+um pull request, e o merge fica com quem revisa.
+
+- O pull request diz o que muda, por quê e como foi conferido: testes, tipos e, se mexe em
+  componente, as páginas de um tema.
+- Commits em português, um assunto por commit. A primeira linha é curta e no presente
+  ("Põe…", "Enxuga…"); o corpo diz o que mudou e por quê.
