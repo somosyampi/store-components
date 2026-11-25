@@ -58,7 +58,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
       </Link>
       <Price prices={prices} />
       {/* ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. */}
-      {quickBuy && product.sku_id && !product.has_variations && !product.blocked_sale && <QuickBuy skuId={product.sku_id} name={product.name} />}
+      {quickBuy && product.sku_id && product.has_variations === false && product.blocked_sale === false && <QuickBuy skuId={product.sku_id} name={product.name} />}
     </li>
   )
 }
