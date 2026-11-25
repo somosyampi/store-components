@@ -181,7 +181,8 @@ export function ProductView({
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
   const fields = customizations.map((item) => {
     const required = !optional && item.required
-    const change = (value: string) => setCustom({ ...custom, [item.id]: value })
+    // Sem espaços no início: um valor só de espaços passaria pelo `required` do navegador e chegaria vazio ao checkout.
+    const change = (value: string) => setCustom({ ...custom, [item.id]: value.trimStart() })
     const hint = [item.description, item.type === 'input' && item.max_chars > 0 && fill(t.customMax, { count: item.max_chars })].filter(Boolean).join(' · ')
 
     return (
