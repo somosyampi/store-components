@@ -24,6 +24,7 @@ type Item = {
   bundle_id?: number | null
   /** O id do "compre junto"; o desconto dele vem no total do carrinho, não no item. */
   kit_id?: number | null
+  customizations?: { name: string; selected_value?: string | null }[]
 }
 
 export type CheckoutCart = {
@@ -41,7 +42,10 @@ export function toCart(cart: CheckoutCart | null | undefined): Cart {
   const kits = Object.values(cart?.grouped_items ?? {}) as { bundle_id?: number | null; bundle?: { name?: string; quantity?: number } | null }[]
 
   const lines = items.flatMap((item, index): CartItem[] => {
-    if (!item.bundle_id && !item.kit_id) return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity) }]
+    if (!item.bundle_id && !item.kit_id) {
+      const chosen = (item.customizations ?? []).flatMap((custom) => (custom.selected_value ? `${custom.name}: ${custom.selected_value}` : []))
+      return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity), ...(chosen.length > 0 && { parts: chosen }) }]
+    }
 
     const parts = items.filter((other) => (item.bundle_id ? other.bundle_id === item.bundle_id : other.kit_id === item.kit_id))
     if (items.indexOf(parts[0]) !== index) return []

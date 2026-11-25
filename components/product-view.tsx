@@ -6,7 +6,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode 
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
-import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
+import type { Customization, Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
 import { Groups, type Sibling } from './groups'
@@ -39,6 +39,10 @@ const LABELS = {
   units: '{count} unidades',
   each: '{value} cada',
   groups: 'Outras opções',
+  customize: 'Personalize o produto',
+  customPrice: '+ {value}',
+  customChoose: 'Selecione',
+  customMax: 'Máximo de {count} caracteres',
   quantity: 'Quantidade',
   unavailable: 'Indisponível',
   choose: 'Selecione: {name}',
@@ -77,6 +81,8 @@ function pan(stage: HTMLElement, x: number, y: number) {
 
 const has = (sku: Sku, values: number[]) => values.every((value) => sku.combinations.split('-').includes(String(value)))
 
+const allowed = (value: string, rule: Customization['allowed_values']) => (rule === 'letters' ? value.replace(/[^\p{L} ]/gu, '') : rule === 'numbers' ? value.replace(/\D/g, '') : value)
+
 // À parte e sob <Suspense>: ler a URL na ProductView impediria o pré-render dela.
 function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Variation[]; onPick(values: number[]): void }) {
   const id = Number(useSearchParams().get('sku'))
@@ -97,7 +103,7 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 /**
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
  * ampliada), zoom-photo, zoom-controls, product-info, product-rating, product-facts, product-price, installments,
- * cashback, pix, options, tiers, tiers-title, stock-low, buy e as de Flags, Rating e Groups. De uso geral: eyebrow, note, saving, tag,
+ * cashback, pix, options, tiers, tiers-title, customizations, stock-low, buy e as de Flags, Rating e Groups. De uso geral: eyebrow, note, saving, tag,
  * icon-button, button, sr-only. Enquanto está na tela, o <html> leva `data-buy-bar`.
  */
 export function ProductView({
@@ -131,6 +137,8 @@ export function ProductView({
   const viewer = useRef<HTMLDialogElement>(null)
   const stage = useRef<HTMLDivElement>(null)
   const toChoose = useRef<HTMLFieldSetElement>(null)
+  const [custom, setCustom] = useState<Record<number, string>>({})
+  const toCustomize = useRef<HTMLFieldSetElement>(null)
 
   // O Next mantém a página no DOM ao navegar: um <dialog> modal aberto nela bloquearia os cliques da seguinte.
   useLayoutEffect(() => {
@@ -167,8 +175,42 @@ export function ProductView({
   const installmentText = samePrice ? prices.installments?.data?.text : undefined
   const cashback = cashbackFor(price.price, cashbacks)
   const stock = sku?.total_in_stock ?? 0
+  const customizations = facts?.customizations?.data ?? []
+  const optional = !!facts?.allow_sell_without_customization
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
+  const fields = customizations.map((item) => {
+    const required = !optional && item.required
+    const change = (value: string) => setCustom({ ...custom, [item.id]: value })
+    const hint = [item.description, item.type === 'input' && item.max_chars > 0 && fill(t.customMax, { count: item.max_chars })].filter(Boolean).join(' · ')
+
+    return (
+      <label key={item.id}>
+        <span>
+          {item.name}
+          {Number(item.price) > 0 && <span className="note"> {fill(t.customPrice, { value: brl(Number(item.price)) })}</span>}
+        </span>
+        {item.type === 'select' ? (
+          <select value={custom[item.id] ?? ''} required={required} onChange={(event) => change(event.target.value)}>
+            <option value="">{t.customChoose}</option>
+            {item.values.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={custom[item.id] ?? ''}
+            required={required}
+            maxLength={item.max_chars || undefined}
+            inputMode={item.allowed_values === 'numbers' ? 'numeric' : undefined}
+            onChange={(event) => change(allowed(event.target.value, item.allowed_values))}
+          />
+        )}
+        {hint && <span className="note">{hint}</span>}
+      </label>
+    )
+  })
 
   return (
     <div className="product">
@@ -345,6 +387,20 @@ export function ProductView({
           </div>
         )}
 
+        {/* Opcional, fica recolhida, como na vitrine oficial; exigida para a compra, já vem aberta. */}
+        {customizations.length > 0 &&
+          (optional ? (
+            <details className="customizations">
+              <summary>{t.customize}</summary>
+              {fields}
+            </details>
+          ) : (
+            <fieldset ref={toCustomize} className="customizations">
+              <legend>{t.customize}</legend>
+              {fields}
+            </fieldset>
+          ))}
+
         {stock > 0 && stock <= lowStock && <p className="stock-low">{plural(t.lowStock_one, t.lowStock_other, stock)}</p>}
 
         <div className="buy" onPointerEnter={cart.warm}>
@@ -363,7 +419,19 @@ export function ProductView({
             className="button"
             disabled={cart.busy || unavailable}
             onClick={() => {
-              if (sku) return cart.add([{ skuId: sku.id, quantity }])
+              if (sku) {
+                // O <fieldset> não valida os campos que contém: quem acusa o que falta é o próprio campo.
+                const missing = toCustomize.current?.querySelector<HTMLInputElement | HTMLSelectElement>(':invalid')
+                if (missing) {
+                  missing.reportValidity()
+                  return
+                }
+                const answers = Object.fromEntries(customizations.map((item) => [item.id, (custom[item.id] ?? '').trim()]))
+                const filled = Object.fromEntries(Object.entries(answers).filter(([, value]) => value))
+                // Sem nada preenchido num SKU que exige personalização, vão os campos vazios: quem recusa é o checkout, com a mensagem dele.
+                const customization = !customizations.length ? undefined : Object.keys(filled).length ? filled : optional ? undefined : answers
+                return cart.add([{ skuId: sku.id, quantity, customization }])
+              }
               toChoose.current?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
               toChoose.current?.querySelector<HTMLButtonElement>('button:enabled')?.focus({ preventScroll: true })
             }}

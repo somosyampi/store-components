@@ -48,3 +48,12 @@ test('carrinho: os itens de um "compre junto" viram uma linha, com o desconto no
   assert.deepEqual(cart.items, [{ id: 1092246393, name: '', images: [], price: 1759.8, quantity: 1, parts: ['Scarpin 38', 'Bolsa de Mão em Couro Creme'], combo: true }])
   assert.deepEqual([cart.count, cart.total, cart.discount], [2, 1583.82, 175.98])
 })
+
+test('item personalizado: o que o visitante escolheu aparece na linha', () => {
+  const cart = toCart({
+    items: [{ id: 1, name: 'Cortina', price: 174.9, quantity: 1, customizations: [{ name: 'Nome para bordar', selected_value: 'Ana' }, { name: 'Cor da linha', selected_value: null }] }],
+    prices: { total: 174.9 },
+  })
+
+  assert.deepEqual(cart.items, [{ id: 1, name: 'Cortina', images: [], price: 174.9, quantity: 1, parts: ['Nome para bordar: Ana'] }])
+})

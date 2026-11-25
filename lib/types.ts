@@ -17,6 +17,19 @@ export type Flag = { id: number; name: string; text_color?: string | null; backg
 /** `amount` é o total e `base_value` o preço sem juros. */
 export type Installment = { installment: number; text: string; amount: string | number; base_value: string | number; amount_formated: string }
 
+export type Customization = {
+  id: number
+  name: string
+  price: number | string
+  description?: string | null
+  type: 'input' | 'select'
+  required: boolean
+  /** 0 quando não há limite. */
+  max_chars: number
+  allowed_values: 'letters' | 'numbers' | 'all'
+  values: string[]
+}
+
 export type Sku = {
   id: number
   sku?: string | null
@@ -28,6 +41,8 @@ export type Sku = {
   combinations: string
   prices: { data: Prices }
   images: { data: Image[] }
+  customizations?: { data: Customization[] }
+  allow_sell_without_customization?: boolean
 }
 
 export type Variation = { id: number; name: string; values: { data: { id: number; value: string }[] } }

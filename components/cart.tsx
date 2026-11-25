@@ -8,7 +8,7 @@ import { fill, plural } from '../lib/labels'
 import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
 
-export type Line = { skuId: number; quantity: number }
+export type Line = { skuId: number; quantity: number; customization?: Record<string, string> }
 /** Os SKUs entram como um kit (`products/{id}/bundles`) ou como um "compre junto" (`products/{id}/combos`). */
 export type Group = { kit?: number; combo?: number }
 
@@ -83,6 +83,7 @@ function checkoutCart(checkout: Checkout, failed: string) {
       send('POST', url(checkout.items), {
         product_option_id: lines.map((line) => line.skuId),
         quantity: lines.map((line) => line.quantity),
+        ...(lines.some((line) => line.customization) && { customization: Object.fromEntries(lines.flatMap((line) => (line.customization ? [[line.skuId, line.customization]] : []))) }),
         // Com `bundle_id` o checkout cobra o preço do kit; com `kit_id`, dá o desconto do "compre junto".
         ...(group.kit && { bundle_id: group.kit }),
         ...(group.combo && { kit_id: group.combo }),
