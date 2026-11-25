@@ -1,10 +1,10 @@
 import type { CSSProperties } from 'react'
 import { day } from '../lib/format'
-import { fill } from '../lib/labels'
+import { fill, plural } from '../lib/labels'
 import type { Ratings, Review } from '../lib/types'
 import { Rating, REVIEWS_ID, type RatingLabels } from './rating'
 
-const LABELS = { title: 'Avaliações', stars: '{stars} estrelas', photo: 'Foto enviada por {name}' }
+const LABELS = { title: 'Avaliações', stars_one: '{count} estrela', stars_other: '{count} estrelas', photo: 'Foto enviada por {name}' }
 export type ReviewsLabels = typeof LABELS & RatingLabels
 
 type Props = { ratings: Ratings; reviews: Review[]; labels?: Partial<ReviewsLabels> }
@@ -23,7 +23,7 @@ export function Reviews({ ratings, reviews, labels }: Props) {
         <ul className="reviews-bars">
           {[5, 4, 3, 2, 1].map((stars) => (
             <li key={stars}>
-              <span>{fill(t.stars, { stars })}</span>
+              <span>{plural(t.stars_one, t.stars_other, stars)}</span>
               <span className="reviews-bar" style={{ '--share': (ratings.grouped_rating[stars] ?? 0) / ratings.total } as CSSProperties} />
               <span>{ratings.grouped_rating[stars] ?? 0}</span>
             </li>
