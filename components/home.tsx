@@ -1,6 +1,6 @@
 import Image, { getImageProps } from 'next/image'
 import Link from 'next/link'
-import type { CSSProperties } from 'react'
+import { useId, type CSSProperties } from 'react'
 import type { Banner, Block, Curated, IconShape } from '../lib/home'
 import { fill } from '../lib/labels'
 import { toRoute } from '../lib/routes'
@@ -42,6 +42,7 @@ type HeroProps = { banners: Banner[]; storeUrl: string; labels?: Partial<typeof 
 
 /** Classes: hero e, com mais de um banner, hero-carousel (com o total em `--slides`), hero-slides e hero-nav. */
 export function Hero({ banners, storeUrl, labels }: HeroProps) {
+  const id = useId()
   // O primeiro é o maior elemento da home (LCP): só ele carrega com prioridade.
   const slides = banners.map((banner, index) => <Art key={banner.id} banner={banner} storeUrl={storeUrl} sizes="100vw" priority={index === 0} className="hero" />)
   if (slides.length < 2) return slides[0] ?? null
@@ -52,14 +53,14 @@ export function Hero({ banners, storeUrl, labels }: HeroProps) {
     <div className="hero-carousel" style={{ '--slides': banners.length } as CSSProperties}>
       <div className="hero-slides" role="region" aria-label={t.region} tabIndex={0}>
         {banners.map((banner, index) => (
-          <div key={banner.id} id={`banner-${banner.id}`}>
+          <div key={banner.id} id={`${id}-${index}`}>
             {slides[index]}
           </div>
         ))}
       </div>
       <nav className="hero-nav" aria-label={t.region}>
         {banners.map((banner, index) => (
-          <a key={banner.id} href={`#banner-${banner.id}`} aria-label={fill(t.slide, { index: index + 1, total: banners.length })} />
+          <a key={banner.id} href={`#${id}-${index}`} aria-label={fill(t.slide, { index: index + 1, total: banners.length })} />
         ))}
       </nav>
     </div>
