@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import type { Chrome } from '../lib/home'
+import { toRoute } from '../lib/routes'
 
 export type Phone = { number: string; formated_number: string }
 
@@ -7,12 +9,12 @@ export type Phone = { number: string; formated_number: string }
 export const whatsappUrl = ({ number }: Phone) => `https://wa.me/55${number.replace(/\D/g, '')}`
 
 /** Classe: notice, com as cores do lojista em `--notice-background` e `--notice-color` e, quando ele a quer só na home, `data-only-home`. */
-export function Notice({ notice }: { notice: NonNullable<Chrome['notice']> }) {
+export function Notice({ notice, storeUrl }: { notice: NonNullable<Chrome['notice']>; storeUrl: string }) {
   const colors = { '--notice-background': notice.background ?? undefined, '--notice-color': notice.color ?? undefined } as CSSProperties
 
   return (
     <p className="notice" style={colors} data-only-home={notice.onlyHome || undefined}>
-      {notice.link ? <a href={notice.link}>{notice.text}</a> : notice.text}
+      {notice.link ? <Link href={toRoute(notice.link, storeUrl)}>{notice.text}</Link> : notice.text}
     </p>
   )
 }
@@ -20,10 +22,10 @@ export function Notice({ notice }: { notice: NonNullable<Chrome['notice']> }) {
 const LABELS = { support: 'Atendimento', whatsapp: 'WhatsApp', tracking: 'Rastreie seu pedido' }
 export type TopBarLabels = typeof LABELS
 
-type Props = { whatsapp?: Phone | null; phone?: Phone | null; tracking?: string | null; labels?: Partial<TopBarLabels> }
+type Props = { whatsapp?: Phone | null; phone?: Phone | null; tracking?: string | null; storeUrl: string; labels?: Partial<TopBarLabels> }
 
 /** Classes: topbar, topbar-support. */
-export function TopBar({ whatsapp, phone, tracking, labels }: Props) {
+export function TopBar({ whatsapp, phone, tracking, storeUrl, labels }: Props) {
   if (!whatsapp && !phone && !tracking) return null
   const t = { ...LABELS, ...labels }
 
@@ -41,9 +43,9 @@ export function TopBar({ whatsapp, phone, tracking, labels }: Props) {
         </p>
       )}
       {tracking && (
-        <a href={tracking} rel="nofollow">
+        <Link href={toRoute(tracking, storeUrl)} rel="nofollow">
           {t.tracking}
-        </a>
+        </Link>
       )}
     </div>
   )
