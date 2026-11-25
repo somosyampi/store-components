@@ -10,6 +10,8 @@ export type Prices = {
 
 export type Image = { url: string }
 
+export type Category = { id: number; name: string; slug: string; children?: { data: Category[] } }
+
 export type Flag = { id: number; name: string; text_color?: string | null; background_color?: string | null }
 
 /** `amount` é o total e `base_value` o preço sem juros. */
