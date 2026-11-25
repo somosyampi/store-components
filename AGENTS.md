@@ -45,9 +45,10 @@ acessibilidade. Por isso:
 
 ## Lógica (`lib/`)
 
-- Sem dependências. Contas e transformações (`offers`, `prices`, `routes`, `cart`, `format`,
-  `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado por
-  `node --test`).
+- Sem dependências. Contas e transformações (`offers`, `prices`, `home`, `routes`, `cart`,
+  `format`, `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado
+  por `node --test`). Um módulo de `lib/` que importa outro em tempo de execução escreve a
+  extensão (`./format.ts`): o `node --test` não tem um empacotador para resolvê-la.
 - As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
   são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
   dela.
