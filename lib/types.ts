@@ -31,6 +31,22 @@ export type Sku = {
 
 export type Variation = { id: number; name: string; values: { data: { id: number; value: string }[] } }
 
-export type CardProduct = { id: number; name: string; slug: string; images: { data: Image[] }; prices: { data: Prices }; flags?: { data: Flag[] } }
+export type CardProduct = {
+  id: number
+  name: string
+  slug: string
+  images: { data: Image[] }
+  prices: { data: Prices }
+  flags?: { data: Flag[] }
+  rating?: number | null
+  total_approved_reviews?: number
+}
+
+type When = { date: string }
+
+export type Review = { rating: number; name: string; message: string; created_at: When; photos?: { data: Image[] } }
+
+/** GET …/products/reviews/ratings */
+export type Ratings = { average_rating: string | number | null; total: number; grouped_rating: Record<string, number> }
 
 export type Checkout = { items: string; items_json: string; redirect_to: string; store_token: string }

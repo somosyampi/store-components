@@ -6,11 +6,12 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode 
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { tierOffer, type Tier } from '../lib/offers'
-import type { Flag, Image as Photo, Installment, Prices, Sku, Variation } from '../lib/types'
+import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
 import { CloseIcon, PixIcon, SearchIcon } from './icons'
 import { Price } from './price'
+import { Rating, REVIEWS_ID, type RatingLabels } from './rating'
 
 const LABELS = {
   zoom: 'Ampliar foto de {name}',
@@ -38,7 +39,7 @@ const LABELS = {
   choose: 'Selecione: {name}',
   add: 'Adicionar ao carrinho',
 }
-export type ProductViewLabels = typeof LABELS
+export type ProductViewLabels = typeof LABELS & RatingLabels
 
 type Props = {
   name: string
@@ -49,6 +50,7 @@ type Props = {
   skus: Sku[]
   tiers: Tier[]
   flags?: Flag[]
+  ratings?: Pick<Ratings, 'average_rating' | 'total'> | null
   /** Em meses. */
   warranty?: number
   /** De `checkoutPrices` (lib/prices.ts), não do catálogo. */
@@ -85,8 +87,8 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 
 /**
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
- * ampliada), zoom-photo, zoom-controls, product-info, product-facts, product-price, installments,
- * pix, options, tiers, tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag,
+ * ampliada), zoom-photo, zoom-controls, product-info, product-rating, product-facts, product-price, installments,
+ * pix, options, tiers, tiers-title, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
  * icon-button, button, sr-only. Enquanto está na tela, o <html> leva `data-buy-bar`.
  */
 export function ProductView({
@@ -98,6 +100,7 @@ export function ProductView({
   skus,
   tiers,
   flags,
+  ratings,
   warranty = 0,
   installments = [],
   sizes = '(min-width: 900px) 50vw, 100vw',
@@ -221,6 +224,11 @@ export function ProductView({
         <Flags flags={flags} />
         {brand && <p className="eyebrow">{brand}</p>}
         <h1>{name}</h1>
+        {ratings?.total ? (
+          <a className="product-rating" href={`#${REVIEWS_ID}`}>
+            <Rating value={ratings.average_rating} count={ratings.total} labels={labels} />
+          </a>
+        ) : null}
 
         {(facts?.sku || facts?.days_availability_formated || warranty > 0) && (
           <dl className="product-facts">

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
 import { Price } from './price'
+import { Rating } from './rating'
 
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
 
@@ -32,7 +33,7 @@ type CardProps = {
   sizes?: string
 }
 
-/** Classes: card, card-media, card-tag, card-name e as de Flags. */
+/** Classes: card, card-media, card-tag, card-name e as de Flags e Rating. */
 export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]
@@ -50,6 +51,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
           <Flags flags={product.flags?.data} />
         </span>
         <span className="card-name">{product.name}</span>
+        {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} /> : null}
       </Link>
       <Price prices={prices} />
     </li>

@@ -1,5 +1,8 @@
 export const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+/** '2025-03-11 14:02:11.000000' → '11/03/2025' */
+export const day = (date: string) => date.slice(0, 10).split('-').reverse().join('/')
+
 // O editor da Yampi grava acentos e sinais como entidades (&ccedil;, &ndash;).
 const MARKS: Record<string, string> = { acute: '\u0301', grave: '\u0300', circ: '\u0302', tilde: '\u0303', uml: '\u0308', cedil: '\u0327' }
 const NAMED: Record<string, string> = {
