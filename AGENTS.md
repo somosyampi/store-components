@@ -42,6 +42,9 @@ acessibilidade. Por isso:
 7. **Rotas fixas.** O pacote gera links para `/produto/{slug}`, `/busca`, `/categoria/…`,
    `/colecao/…` e `/promocao/…`, e o tema precisa ter essas rotas. O esquema de URLs das
    vitrines (filtros, ordenação e página na query string) está em `lib/routes.ts`.
+8. **HTML só o do lojista.** O que entra por `dangerouslySetInnerHTML` é o que ele escreve no
+   painel (descrições, textos das seções, resposta a uma dúvida) e sai como na vitrine
+   oficial, sem filtro. O que o visitante escreve (avaliação, dúvida) é sempre texto.
 
 ## Lógica (`lib/`)
 
