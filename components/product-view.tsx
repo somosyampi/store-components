@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { brl } from '../lib/format'
-import { fill } from '../lib/labels'
+import { fill, plural } from '../lib/labels'
 import { tierOffer, type Tier } from '../lib/offers'
 import type { Flag, Image as Photo, Prices, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
@@ -19,6 +19,11 @@ const LABELS = {
   zoomed: 'Foto ampliada',
   zoomIn: 'Ampliar',
   closeZoom: 'Fechar foto',
+  ref: 'Ref.',
+  availability: 'Disponibilidade',
+  warranty: 'Garantia',
+  months_one: '{count} mês',
+  months_other: '{count} meses',
   installments: 'ou {text}',
   pix: 'no Pix',
   saving: 'Economize {value}',
@@ -43,6 +48,8 @@ type Props = {
   /** Faixas de desconto por quantidade ("leve 2 com 5% off"). */
   tiers: Tier[]
   flags?: Flag[]
+  /** Garantia, em meses. */
+  warranty?: number
   /** `sizes` da foto principal, conforme o layout do tema. */
   sizes?: string
   /** Tamanho das miniaturas, na proporção das fotos do tema. */
@@ -82,14 +89,15 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 }
 
 /**
- * A compra de um produto: galeria com zoom, selos, preço, variações, desconto por quantidade e
- * botão de compra. Precisa de <CartProvider>. Enquanto está na tela, marca o <html> com
- * `data-buy-bar`, para o CSS do tema abrir espaço a um botão de compra preso ao pé da tela.
+ * A compra de um produto: galeria com zoom, selos, ficha (referência, disponibilidade e garantia),
+ * preço, variações, desconto por quantidade e botão de compra. Precisa de <CartProvider>.
+ * Enquanto está na tela, marca o <html> com `data-buy-bar`, para o CSS do tema abrir espaço a um
+ * botão de compra preso ao pé da tela.
  *
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
- * ampliada), zoom-photo, zoom-controls, product-info, product-price, pix, options, tiers,
- * tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag, icon-button, button,
- * sr-only.
+ * ampliada), zoom-photo, zoom-controls, product-info, product-facts, product-price, pix, options,
+ * tiers, tiers-title, buy e as de Flags. De uso geral: eyebrow, note, saving, tag, icon-button,
+ * button, sr-only.
  */
 export function ProductView({
   name,
@@ -100,6 +108,7 @@ export function ProductView({
   skus,
   tiers,
   flags,
+  warranty = 0,
   sizes = '(min-width: 900px) 50vw, 100vw',
   thumb = { width: 64, height: 64 },
   labels,
@@ -149,6 +158,8 @@ export function ProductView({
   const price = sku?.prices.data ?? prices
   const photos = sku?.images.data.length ? sku.images.data : images
   const photo = photos[active] ?? photos[0]
+  // Antes da escolha, a ficha mostra o primeiro SKU: ela não muda de altura ao escolher a variação.
+  const facts = sku ?? skus[0]
   // A API só informa o parcelamento do preço do produto: ele vale enquanto o SKU custar o mesmo.
   // ponytail: SKU com preço próprio fica sem a linha de parcelas; para exibi-la, consulte
   // GET /{alias}/public/catalog/products/{id}/installments?amount={preço}.
@@ -225,6 +236,29 @@ export function ProductView({
         <Flags flags={flags} />
         {brand && <p className="eyebrow">{brand}</p>}
         <h1>{name}</h1>
+
+        {(facts?.sku || facts?.days_availability_formated || warranty > 0) && (
+          <dl className="product-facts">
+            {facts?.sku && (
+              <div>
+                <dt>{t.ref}</dt>
+                <dd>{facts.sku}</dd>
+              </div>
+            )}
+            {facts?.days_availability_formated && (
+              <div>
+                <dt>{t.availability}</dt>
+                <dd>{facts.days_availability_formated}</dd>
+              </div>
+            )}
+            {warranty > 0 && (
+              <div>
+                <dt>{t.warranty}</dt>
+                <dd>{plural(t.months_one, t.months_other, warranty)}</dd>
+              </div>
+            )}
+          </dl>
+        )}
 
         <div className="product-price">
           <Price prices={price} />

@@ -18,9 +18,11 @@ export type Flag = { id: number; name: string; text_color?: string | null; backg
 
 export type Sku = {
   id: number
-  /** Código do SKU e código de barras (EAN/GTIN): só os dados estruturados os usam. */
+  /** Código do SKU: a referência exibida na página e, com o código de barras (EAN/GTIN), os dados estruturados. */
   sku?: string | null
   barcode?: string | null
+  /** Prazo até o envio, como a API o escreve ("Imediata", "60 dias úteis"). */
+  days_availability_formated?: string | null
   blocked_sale: boolean
   /** IDs dos valores de variação que formam o SKU, separados por hífen. */
   combinations: string
