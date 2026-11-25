@@ -47,6 +47,19 @@ test('produto sem variação: um Product com um Offer, o preço cheio riscado e 
   assert.equal('priceSpecification' in odd.offers, false)
 })
 
+test('avaliações: a nota média e as avaliações da página; sem avaliação, nada', () => {
+  const review = { rating: 5, name: 'Vitor', message: 'Excelente qualidade.', created_at: { date: '2025-03-11 14:02:11.000000' } }
+  const rated = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], ratings: { average_rating: '4.6667', total: 3 }, reviews: [review] }))
+
+  assert.deepEqual(rated.aggregateRating, { '@type': 'AggregateRating', ratingValue: 4.7, reviewCount: 3 })
+  assert.deepEqual(rated.review, [
+    { '@type': 'Review', author: { '@type': 'Person', name: 'Vitor' }, datePublished: '2025-03-11', reviewRating: { '@type': 'Rating', ratingValue: 5 }, reviewBody: 'Excelente qualidade.' },
+  ])
+
+  const unrated = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], ratings: { average_rating: null, total: 0 } }))
+  assert.equal('aggregateRating' in unrated, false)
+})
+
 test('produto com variações: um ProductGroup com uma variante por SKU, cada uma com o seu endereço', () => {
   const variations = [
     { id: 1, name: 'Cor', values: { data: [{ id: 10, value: 'Preto' }, { id: 11, value: 'Marrom' }] } },

@@ -1,4 +1,4 @@
-import type { Image, Prices, Variation } from './types'
+import type { Image, Prices, Ratings, Review, Variation } from './types'
 
 type Sku = {
   id: number
@@ -21,6 +21,9 @@ type Input = {
   category?: string
   variations: Variation[]
   skus: Sku[]
+  ratings?: Pick<Ratings, 'average_rating' | 'total'> | null
+  /** As avaliações exibidas na página. */
+  reviews?: Review[]
 }
 
 const SCHEMA = 'https://schema.org/'
@@ -50,10 +53,28 @@ const codes = ({ sku, barcode }: Sku) => ({
   ...(barcode && /^(\d{8}|\d{12,14})$/.test(barcode) && { gtin: barcode }),
 })
 
+function rated(ratings: Input['ratings'], reviews: Review[]) {
+  const value = Number(ratings?.average_rating)
+  if (!ratings?.total || !value) return {}
+
+  return {
+    aggregateRating: { '@type': 'AggregateRating', ratingValue: Math.round(value * 10) / 10, reviewCount: ratings.total },
+    ...(reviews.length && {
+      review: reviews.map((review) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: review.name },
+        datePublished: review.created_at.date.slice(0, 10),
+        reviewRating: { '@type': 'Rating', ratingValue: review.rating },
+        reviewBody: review.message,
+      })),
+    }),
+  }
+}
+
 // O Google só trata cor e tamanho como variantes se cada uma tiver o seu endereço: daí o `?sku={id}`.
-export function productSchema({ id, name, url, images, description, brand, category, variations, skus }: Input) {
+export function productSchema({ id, name, url, images, description, brand, category, variations, skus, ratings, reviews = [] }: Input) {
   const shared = { ...(category && { category }) }
-  const about = { name, ...(description && { description }), ...(brand && { brand: { '@type': 'Brand', name: brand } }) }
+  const about = { name, ...(description && { description }), ...(brand && { brand: { '@type': 'Brand', name: brand } }), ...rated(ratings, reviews) }
   const photos = (sku?: Sku) => (sku?.images.data.length ? sku.images.data : images).map((image) => image.url)
 
   if (!variations.length || skus.length < 2) {
