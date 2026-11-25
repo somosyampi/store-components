@@ -104,3 +104,37 @@ export function toBlocks(sections: Section[], banners: Banner[]): Block[] {
     }
   })
 }
+
+/** O que o lojista configurou para o topo e o rodapé da loja, nas seções `header` e `footer`. */
+export type Chrome = {
+  notice: { text: string; link: string | null; background: string | null; color: string | null; onlyHome: boolean } | null
+  topbar: { whatsapp: boolean; phone: boolean; tracking: string | null } | null
+  footer: { whatsapp: boolean; phone: boolean; email: boolean; social: string[] }
+}
+
+const NETWORKS = ['facebook', 'instagram', 'youtube', 'pinterest', 'tiktok', 'twitter']
+
+export function toChrome(sections: Section[]): Chrome {
+  const params = (alias: string) => Object.fromEntries(sections.find((section) => section.section_alias === alias)?.params.data.map((param) => [param.alias, param.value]) ?? [])
+  const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null)
+  const header = params('header')
+  const footer = params('footer')
+  const notice = header.highlightbar_enabled ? text(header.highlightbar_text) : null
+  const tracking = text(header.topbar_tracking_url)
+
+  return {
+    notice: notice
+      ? { text: notice, link: text(header.highlightbar_link), background: text(header.highlightbar_background), color: text(header.highlightbar_text_color), onlyHome: !!header.highlightbar_only_home }
+      : null,
+    topbar:
+      header.topbar_enabled && (header.topbar_show_whatsapp || header.topbar_show_phone || tracking)
+        ? { whatsapp: !!header.topbar_show_whatsapp, phone: !!header.topbar_show_phone, tracking }
+        : null,
+    footer: {
+      whatsapp: !!(footer.support_enabled && footer.show_whatsapp),
+      phone: !!(footer.support_enabled && footer.show_phone),
+      email: !!(footer.support_enabled && footer.show_email),
+      social: footer.social_enabled ? NETWORKS.filter((network) => footer[`show_${network}`]) : [],
+    },
+  }
+}

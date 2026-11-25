@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { toBanners, toBlocks, type Section } from './home.ts'
+import { toBanners, toBlocks, toChrome, type Section } from './home.ts'
 
 const raw = (id: number, extra = {}) => ({ id, name: `Banner ${id}`, link: null, image_url: `//images.yampi.me/${id}.png`, mobile_image_url: null, dimensions: null, active: true, expired: false, type: 'image', ...extra })
 const section = (section_alias: string, params: Record<string, unknown>, visible = true): Section => ({
@@ -50,4 +50,19 @@ test('seções da home: cada tipo conhecido vira um bloco, na ordem do editor', 
     { type: 'feature', title: 'Clássicos', text: 'Os de sempre.', banner: null, flip: true, picks: [{ name: 'Maleta', slug: 'maleta', image: 'https://img/maleta.png' }, { name: 'Carteira', slug: 'carteira', image: null }] },
     { type: 'shelf', name: 'Bolsas', slug: 'bolsas' },
   ])
+})
+
+test('topo e rodapé: o aviso, os contatos e as redes que o lojista ligou', () => {
+  const header = { highlightbar_enabled: true, highlightbar_text: ' Frete grátis acima de R$ 300 ', highlightbar_link: null, highlightbar_background: '#222222', highlightbar_text_color: '#FFFFFF', highlightbar_only_home: false, topbar_enabled: true, topbar_show_whatsapp: true, topbar_show_phone: false, topbar_tracking_url: 'https://rastreio.com.br' }
+  const footer = { support_enabled: true, show_whatsapp: true, show_phone: true, show_email: false, social_enabled: true, show_instagram: true, show_facebook: false, show_tiktok: true }
+
+  assert.deepEqual(toChrome([section('header', header), section('footer', footer)]), {
+    notice: { text: 'Frete grátis acima de R$ 300', link: null, background: '#222222', color: '#FFFFFF', onlyHome: false },
+    topbar: { whatsapp: true, phone: false, tracking: 'https://rastreio.com.br' },
+    footer: { whatsapp: true, phone: true, email: false, social: ['instagram', 'tiktok'] },
+  })
+
+  const off = toChrome([section('header', { ...header, highlightbar_enabled: false, topbar_enabled: false }), section('footer', { ...footer, support_enabled: false, social_enabled: false })])
+  assert.deepEqual(off, { notice: null, topbar: null, footer: { whatsapp: false, phone: false, email: false, social: [] } })
+  assert.deepEqual(toChrome([]), off)
 })
