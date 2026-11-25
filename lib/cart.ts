@@ -1,3 +1,24 @@
+import type { CardProduct, Customization } from './types'
+
+// ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. A listagem não diz quem exige personalização: esse o checkout recusa, e o carrinho mostra o motivo.
+export const quickBuySku = ({ sku_id, has_variations, blocked_sale }: Pick<CardProduct, 'sku_id' | 'has_variations' | 'blocked_sale'>) =>
+  sku_id && has_variations === false && blocked_sale === false ? sku_id : null
+
+// A opção de uma lista vai como foi cadastrada: só o texto livre é filtrado.
+// Sem espaços no início: um valor só de espaços passaria pelo `required` do navegador e chegaria vazio ao checkout.
+export const cleanAnswer = (value: string, { type, allowed_values: rule }: Pick<Customization, 'type' | 'allowed_values'>) =>
+  type === 'select' ? value : (rule === 'letters' ? value.replace(/[^\p{L} ]/gu, '') : rule === 'numbers' ? value.replace(/\D/g, '') : value).trimStart()
+
+/** `optional` é o `allow_sell_without_customization` do SKU. */
+export function toCustomization(fields: Pick<Customization, 'id'>[], answers: Record<number, string>, optional: boolean) {
+  const all = Object.fromEntries(fields.map((field) => [field.id, (answers[field.id] ?? '').trim()]))
+  const filled = Object.fromEntries(Object.entries(all).filter(([, value]) => value))
+  if (Object.keys(filled).length) return filled
+
+  // Sem nada preenchido num SKU que exige personalização, vão os campos vazios: quem recusa é o checkout, com a mensagem dele.
+  return optional || !fields.length ? undefined : all
+}
+
 export type CartItem = {
   /** Num kit, o id de um dos itens: alterar ou remover um vale para o kit todo. */
   id: number

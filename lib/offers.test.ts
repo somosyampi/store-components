@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cashbackFor, comboOffer, kitPrice, quantityTiers, tierOffer, toKits, type Bundle, type Tier } from './offers.ts'
+import { buyable, cashbackFor, comboChoice, comboOffer, kitPrice, quantityTiers, tierOffer, toKits, type Bundle, type Combo, type Tier } from './offers.ts'
 
 test('desconto por quantidade: faixas da API e o valor que o carrinho cobra', () => {
   const tiers = quantityTiers({
@@ -74,6 +74,39 @@ test('compre junto: o desconto em % ou em reais sobre a soma dos itens', () => {
   assert.deepEqual(comboOffer({ discount_type: 'p', discount_value: 10 }, [459.9, 1299.9]), { full: 1759.8, total: 1583.82, saving: 175.98 })
   assert.deepEqual(comboOffer({ discount_type: 'v', discount_value: 50 }, [100, 80.5]), { full: 180.5, total: 130.5, saving: 50 })
   assert.deepEqual(comboOffer({ discount_type: 'v', discount_value: 500 }, [100]), { full: 100, total: 0, saving: 100 })
+})
+
+const comboSku = (id: number, price: number, blocked_sale = false) => ({ id, blocked_sale, prices: { data: { price } }, images: { data: [] } })
+const comboProduct = (id: number, ...skus: ReturnType<typeof comboSku>[]) => ({ id, name: `Produto ${id}`, slug: `produto-${id}`, images: { data: [] }, skus: { data: skus } })
+const combo: Combo = {
+  id: 1,
+  discount_type: 'p',
+  discount_value: 10,
+  products: { data: [comboProduct(1, comboSku(11, 100)), comboProduct(2, comboSku(21, 50, true), comboSku(22, 60), comboSku(23, 80))] },
+}
+const ids = (choice: ReturnType<typeof comboChoice>) => choice.skus.map((sku) => sku?.id)
+
+test('compre junto: o único SKU à venda já vem escolhido e a conta parte do primeiro à venda', () => {
+  const start = comboChoice(combo)
+
+  assert.deepEqual(ids(start), [11, undefined])
+  assert.deepEqual([start.available, start.full, start.total, start.saving], [true, 160, 144, 16])
+  assert.deepEqual(ids(comboChoice(combo, { 2: 23 })), [11, 23])
+  assert.equal(comboChoice(combo, { 2: 23 }).total, 162)
+})
+
+test('compre junto: a escolha só vale para um SKU do produto que esteja à venda', () => {
+  assert.deepEqual(ids(comboChoice(combo, { 2: 21 })), [11, undefined])
+  assert.deepEqual(ids(comboChoice(combo, { 1: 99, 2: 22 })), [11, 22])
+})
+
+test('compre junto: sem SKU à venda fica indisponível; sem SKU nenhum, a oferta não é montada', () => {
+  const soldOut: Combo = { ...combo, products: { data: [comboProduct(1, comboSku(11, 100, true)), comboProduct(2, comboSku(22, 60))] } }
+  const empty: Combo = { ...combo, id: 2, products: { data: [comboProduct(1, comboSku(11, 100)), comboProduct(3)] } }
+
+  assert.equal(comboChoice(soldOut).available, false)
+  assert.deepEqual(ids(comboChoice(soldOut)), [undefined, 22])
+  assert.deepEqual(buyable([combo, soldOut, empty]).map((offer) => offer.id), [1, 1])
 })
 
 test('cashback: o percentual da faixa em que o preço cai', () => {

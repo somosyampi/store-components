@@ -49,16 +49,19 @@ acessibilidade. Por isso:
 ## Lógica (`lib/`)
 
 - Sem dependências. Contas e transformações (`offers`, `prices`, `home`, `routes`, `cart`,
-  `format`, `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado
-  por `node --test`). Um módulo de `lib/` que importa outro em tempo de execução escreve a
-  extensão (`./format.ts`): o `node --test` não tem um empacotador para resolvê-la.
+  `sku`, `format`, `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`,
+  rodado por `node --test`). Um módulo de `lib/` que importa outro em tempo de execução
+  escreve a extensão (`./format.ts`): o `node --test` não tem um empacotador para resolvê-la.
+- A decisão que um componente toma mora aqui e tem teste: que SKU as variações escolhidas
+  formam, o que vai ao carrinho, quem pode ser comprado direto do card. O componente chama a
+  função e desenha o resultado; não há teste de componente.
 - As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
   são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
   dela.
 - Só dois módulos chamam a rede. `search.ts` usa o serviço de busca da Yampi: a rota
   `/products` com termo registra o termo entre os "mais buscados" da loja, em produção. Por
-  isso as sugestões usam `/products/suggestions`, e um teste só busca termos que a loja já
-  tem (na loja modelo, "bolsa"). `prices.ts` usa a API de preços do checkout, a fonte do
+  isso as sugestões usam `/products/suggestions`, o teste troca a rede por uma resposta de
+  mentira e, à mão, só se busca termo que a loja já tem (na loja modelo, "bolsa"). `prices.ts` usa a API de preços do checkout, a fonte do
   preço e das parcelas de um produto: a parcela que a API principal devolve no detalhe do
   produto não considera as promoções da loja.
 - Os dados estruturados de `schema.ts` seguem a documentação do Google para lojas: página de
@@ -99,7 +102,7 @@ esse filtro; ao mexer num arquivo, apague os comentários dele que não passam.
 
 ## Antes de publicar
 
-- `npm test` e `npm run typecheck` precisam passar.
+- `npm test` e `npm run typecheck` precisam passar; o CI roda os dois em todo pull request.
 - Mudou um componente? Instale a cópia local num tema e confira no navegador as páginas que
   o usam: `npm install --install-links ../store-components`. Se a versão não mudou, apague
   antes `node_modules/@yampi/store-components`, ou o npm mantém a cópia antiga.

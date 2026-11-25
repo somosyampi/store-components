@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { EMPTY, toCart } from './cart.ts'
+import { EMPTY, cleanAnswer, quickBuySku, toCart, toCustomization } from './cart.ts'
 
 test('carrinho: os itens de um kit viram uma linha só', () => {
   const cart = toCart({
@@ -56,4 +56,37 @@ test('item personalizado: o que o visitante escolheu aparece na linha', () => {
   })
 
   assert.deepEqual(cart.items, [{ id: 1, name: 'Cortina', images: [], price: 174.9, quantity: 1, parts: ['Nome para bordar: Ana'] }])
+})
+
+test('compra rápida: só o produto que diz não ter variações nem venda bloqueada', () => {
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: false, blocked_sale: false }), 7)
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: true, blocked_sale: false }), null)
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: false, blocked_sale: true }), null)
+  assert.equal(quickBuySku({ sku_id: 7 }), null)
+  assert.equal(quickBuySku({ has_variations: false, blocked_sale: false }), null)
+})
+
+test('personalização: o texto livre só guarda o que o cadastro aceita, sem espaços no início', () => {
+  const text = (allowed_values: 'letters' | 'numbers' | 'all') => ({ type: 'input' as const, allowed_values })
+
+  assert.equal(cleanAnswer('  Ana3 Maria! ', text('letters')), 'Ana Maria ')
+  assert.equal(cleanAnswer('São João', text('letters')), 'São João')
+  assert.equal(cleanAnswer('a1 b2', text('numbers')), '12')
+  assert.equal(cleanAnswer('  Nº 7!', text('all')), 'Nº 7!')
+  assert.equal(cleanAnswer('   ', text('all')), '')
+})
+
+test('personalização: a opção de uma lista vai como foi cadastrada', () => {
+  assert.equal(cleanAnswer('Azul 2', { type: 'select', allowed_values: 'letters' }), 'Azul 2')
+  assert.equal(cleanAnswer('Tamanho P', { type: 'select', allowed_values: 'numbers' }), 'Tamanho P')
+})
+
+test('personalização: vai ao carrinho o que foi preenchido; sem nada, só quando o SKU a exige', () => {
+  const fields = [{ id: 47 }, { id: 48 }]
+
+  assert.deepEqual(toCustomization(fields, { 47: ' Ana ', 48: '' }, true), { 47: 'Ana' })
+  assert.deepEqual(toCustomization(fields, { 47: 'Ana', 48: 'Prata' }, false), { 47: 'Ana', 48: 'Prata' })
+  assert.equal(toCustomization(fields, {}, true), undefined)
+  assert.deepEqual(toCustomization(fields, { 47: '  ' }, false), { 47: '', 48: '' })
+  assert.equal(toCustomization([], {}, false), undefined)
 })
