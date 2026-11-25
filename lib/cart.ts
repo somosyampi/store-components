@@ -1,3 +1,9 @@
+import type { CardProduct } from './types'
+
+// ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. A listagem não diz quem exige personalização: esse o checkout recusa, e o carrinho mostra o motivo.
+export const quickBuySku = ({ sku_id, has_variations, blocked_sale }: Pick<CardProduct, 'sku_id' | 'has_variations' | 'blocked_sale'>) =>
+  sku_id && has_variations === false && blocked_sale === false ? sku_id : null
+
 export type CartItem = {
   /** Num kit, o id de um dos itens: alterar ou remover um vale para o kit todo. */
   id: number

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { EMPTY, toCart } from './cart.ts'
+import { EMPTY, quickBuySku, toCart } from './cart.ts'
 
 test('carrinho: os itens de um kit viram uma linha só', () => {
   const cart = toCart({
@@ -56,4 +56,12 @@ test('item personalizado: o que o visitante escolheu aparece na linha', () => {
   })
 
   assert.deepEqual(cart.items, [{ id: 1, name: 'Cortina', images: [], price: 174.9, quantity: 1, parts: ['Nome para bordar: Ana'] }])
+})
+
+test('compra rápida: só o produto que diz não ter variações nem venda bloqueada', () => {
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: false, blocked_sale: false }), 7)
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: true, blocked_sale: false }), null)
+  assert.equal(quickBuySku({ sku_id: 7, has_variations: false, blocked_sale: true }), null)
+  assert.equal(quickBuySku({ sku_id: 7 }), null)
+  assert.equal(quickBuySku({ has_variations: false, blocked_sale: false }), null)
 })
