@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { plain, prose } from './format.ts'
+import { plain, prose, youtubeId } from './format.ts'
 
 test('HTML do lojista: saem as quebras e os blocos vazios usados como espaçamento', () => {
   const html =
@@ -25,4 +25,11 @@ test('texto puro: saem as tags e as entidades viram letras', () => {
     'Coleção de VERÃO & inverno – 50% º <novo> 👜 &inexistente; &#99999999;',
   )
   assert.equal(plain('Tom &amp;amp; Jerry'), 'Tom &amp; Jerry')
+})
+
+test('vídeo: o id sai de qualquer endereço do YouTube', () => {
+  for (const url of ['https://www.youtube.com/watch?v=Usl7BziqXqM', 'https://www.youtube.com/watch?feature=share&v=Usl7BziqXqM', 'https://youtu.be/Usl7BziqXqM?t=10', 'https://www.youtube.com/shorts/Usl7BziqXqM', 'https://www.youtube.com/embed/Usl7BziqXqM']) {
+    assert.equal(youtubeId(url), 'Usl7BziqXqM', url)
+  }
+  assert.equal(youtubeId('https://vimeo.com/123456'), null)
 })
