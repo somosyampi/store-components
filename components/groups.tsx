@@ -17,7 +17,7 @@ export function Groups({ products, title = 'Outras opções', size = 64 }: Props
         {products.map((product) => (
           <li key={product.id}>
             <Link href={`/produto/${product.slug}`} title={product.name} aria-label={product.name}>
-              <span className="group-media">{product.images.data[0] && <Image src={product.images.data[0].url} alt="" width={size} height={size} />}</span>
+              <span className="group-media">{product.images.data[0] ? <Image src={product.images.data[0].url} alt="" width={size} height={size} /> : product.name}</span>
             </Link>
           </li>
         ))}
