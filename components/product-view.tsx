@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
-import { tierOffer, type Tier } from '../lib/offers'
+import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
 import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
@@ -28,6 +28,7 @@ const LABELS = {
   installments: 'ou {text}',
   allInstallments: 'Ver parcelas',
   installmentTotal: 'total de {value}',
+  cashback: 'Ganhe {percent}% de cashback',
   pix: 'no Pix',
   saving: 'Economize {value}',
   off: '{percent}% off',
@@ -55,6 +56,7 @@ type Props = {
   warranty?: number
   /** De `checkoutPrices` (lib/prices.ts), não do catálogo. */
   installments?: Installment[]
+  cashbacks?: Cashback[]
   sizes?: string
   thumb?: { width: number; height: number }
   labels?: Partial<ProductViewLabels>
@@ -88,7 +90,7 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 /**
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
  * ampliada), zoom-photo, zoom-controls, product-info, product-rating, product-facts, product-price, installments,
- * pix, options, tiers, tiers-title, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
+ * cashback, pix, options, tiers, tiers-title, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
  * icon-button, button, sr-only. Enquanto está na tela, o <html> leva `data-buy-bar`.
  */
 export function ProductView({
@@ -103,6 +105,7 @@ export function ProductView({
   ratings,
   warranty = 0,
   installments = [],
+  cashbacks,
   sizes = '(min-width: 900px) 50vw, 100vw',
   thumb = { width: 64, height: 64 },
   labels,
@@ -153,6 +156,7 @@ export function ProductView({
   // ponytail: SKU com preço próprio fica sem parcelas: a API de preços do checkout responde pelo produto.
   const samePrice = price.price === prices.price
   const installmentText = samePrice ? prices.installments?.data?.text : undefined
+  const cashback = cashbackFor(price.price, cashbacks)
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
 
@@ -280,6 +284,7 @@ export function ProductView({
               <span className="tag">{fill(t.off, { percent: price.pix.discount_percent })}</span>
             </p>
           )}
+          {cashback > 0 && <p className="cashback">{fill(t.cashback, { percent: cashback })}</p>}
         </div>
 
         {variations.map((variation, index) => (

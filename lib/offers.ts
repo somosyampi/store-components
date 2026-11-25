@@ -44,6 +44,12 @@ export function tierOffer(tier: Tier, price: number) {
 export const kitPrice = (item: { price_type: string; price: number; discount: number }, skuPrice: number) =>
   item.price_type === 'custom' ? item.price : item.price_type === 'discount' ? cents(skuPrice * (1 - item.discount / 100)) : skuPrice
 
+/** As regras de cashback da loja, do whois (`cashbacks`); os valores podem vir como texto. */
+export type Cashback = { percent_amount: number | string; min_amount: number | string; max_amount: number | string }
+
+export const cashbackFor = (price: number, rules: Cashback[] = []) =>
+  Number(rules.find((rule) => price >= Number(rule.min_amount) && price <= Number(rule.max_amount))?.percent_amount) || 0
+
 /** GET …/products/{id}/combos */
 export type Combo = {
   id: number
