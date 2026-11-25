@@ -14,13 +14,11 @@ export const FILTERS_LABELS = {
 }
 export type FiltersLabels = typeof FILTERS_LABELS
 
-/** Id do painel de filtros: é o alvo (`popoverTarget`) do botão que o abre no celular. */
 export const FILTERS_ID = 'filtros'
 
 type Props = {
   facets: Facet[]
   state: ListingState
-  /** Caminho da vitrine e parâmetros fixos dela (o termo, na busca). */
   base: string
   extra?: Record<string, string>
   total: number
@@ -28,8 +26,6 @@ type Props = {
 }
 
 /**
- * Filtros da vitrine: cada opção é um link para a mesma página com o filtro ligado ou desligado.
- * O painel é um popover nativo; o tema decide se é gaveta (celular) ou coluna (desktop).
  * Classes: filters, filters-head, filters-selected, filters-clear, filter, swatch, check,
  * filters-done. De uso geral: icon-button, button, note.
  */

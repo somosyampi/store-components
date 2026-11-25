@@ -8,7 +8,6 @@ import { CRUMBS_LABELS, Crumbs, type Crumb } from './crumbs'
 import { FILTERS_ID, FILTERS_LABELS, Filters } from './filters'
 import { ProductGrid } from './product-card'
 
-/** Os textos da vitrine, com os da trilha e os dos filtros, que ela exibe. */
 export const LISTING_LABELS = {
   ...CRUMBS_LABELS,
   ...FILTERS_LABELS,
@@ -30,26 +29,19 @@ type Props = {
   total: number
   pages: number
   state: ListingState
-  /** Caminho da vitrine e parâmetros fixos dela (o termo, na busca). */
   base: string
   extra?: Record<string, string>
   facets: Facet[]
   trail?: Crumb[]
-  /** Endereço público da loja, para a trilha de navegação enviada aos buscadores (ver `Crumbs`). */
   siteUrl?: string
-  /** Texto de apresentação cadastrado pelo lojista (HTML), exibido depois dos produtos. */
   description?: string | null
-  /** Quantos cards ficam acima da dobra, e o `sizes` das fotos na grade do tema (ver `ProductGrid`). */
   eager?: number
   sizes?: string
   labels?: Partial<ListingLabels>
-  /** Navegação exibida acima da vitrine (ex.: subcategorias). */
   children?: ReactNode
 }
 
 /**
- * Vitrine de produtos com filtros, ordenação e paginação (todos links): categoria, coleção,
- * promoção ou busca.
  * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
  * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
@@ -118,7 +110,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
   )
 }
 
-/** Mostrado enquanto a vitrine carrega. Classes: page, listing-head, skeleton, skeleton-title, grid, card, card-media. */
+/** Classes: page, listing-head, skeleton, skeleton-title, grid, card, card-media. */
 export function ListingSkeleton() {
   return (
     <div className="page" aria-busy="true">

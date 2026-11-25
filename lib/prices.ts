@@ -1,13 +1,9 @@
-// API de preços do checkout da Yampi (pay.yampi.com.br), a que a vitrine oficial consulta para
-// mostrar o preço e as parcelas de cada produto. É ela que parcela o preço já com as promoções da
-// loja: no detalhe do produto, na API principal, a parcela sai do preço de antes da promoção.
-// É aberta e tem CORS liberado, então serve ao servidor e ao navegador.
+// Só esta API parcela o preço já com as promoções da loja: a principal parcela o preço de cadastro.
 
 import type { Installment, Prices } from './types'
 
 export const PRICES_URL = 'https://pay.yampi.com.br/api/v2/prices'
 
-/** O que interessa de GET …/api/v2/prices. */
 export type CheckoutPrices = {
   price: number
   price_sale: number
@@ -20,7 +16,6 @@ export type CheckoutPrices = {
 
 const cents = (value: number) => Math.round(value * 100) / 100
 
-/** A resposta da API de preços no formato que os componentes leem, com as parcelas uma a uma. */
 export function fromCheckout(data: CheckoutPrices): { prices: Prices; installments: Installment[] } {
   const plan = Array.isArray(data.installments_data) ? undefined : data.installments_data
   const pix = data.payment_methods?.pix
@@ -42,17 +37,13 @@ export function fromCheckout(data: CheckoutPrices): { prices: Prices; installmen
 type Query = {
   storeId: number
   productId: number
-  /** Bandeira do cartão das parcelas; a padrão da loja vem no whois (`checkout.default_card`). */
+  /** A padrão da loja vem no whois, em `checkout.default_card`. */
   cardBrand?: string | null
   endpoint?: string
   signal?: AbortSignal
 }
 
-/**
- * GET …/api/v2/prices — o preço que o checkout cobra pelo produto e as parcelas dele.
- * ponytail: responde pelo produto e por uma bandeira; para os preços de campanha, a vitrine
- * oficial manda também os `utm_*` do visitante, o que só o navegador conhece.
- */
+// ponytail: sem os `utm_*` do visitante, que a vitrine oficial manda para os preços de campanha.
 export async function checkoutPrices({ storeId, productId, cardBrand, endpoint = PRICES_URL, signal }: Query) {
   const query = new URLSearchParams({ store_id: String(storeId), product_id: String(productId), ...(cardBrand && { card_brand: cardBrand }) })
   // Sem um sinal de quem chama, a espera tem limite: uma consulta travada não segura a página.

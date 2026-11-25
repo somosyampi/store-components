@@ -1,10 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { Flag } from '../lib/types'
 
-/**
- * Selos do produto ("Lançamento", "Pré-venda"). As cores que o lojista escolheu chegam ao CSS do
- * tema em cada selo, como `--flag-color` e `--flag-background`. Classes: flags, flag.
- */
+/** Classes: flags e flag, que leva as cores do cadastro em `--flag-color` e `--flag-background`. */
 export function Flags({ flags = [] }: { flags?: Flag[] }) {
   if (!flags.length) return null
 

@@ -4,17 +4,16 @@ import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
 import { Price } from './price'
 
-/** `sizes` da foto para uma grade de duas colunas no celular e quatro no desktop; informe o da grade do tema. */
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
 
 type GridProps = {
   products: CardProduct[]
-  /** Quantos cards ficam acima da dobra e não devem esperar o lazy loading. */
+  /** Quantos cards carregam sem lazy loading: os que ficam acima da dobra. */
   eager?: number
   sizes?: string
 }
 
-/** Grade de produtos. Classes: grid e as de ProductCard. */
+/** Classes: grid e as de ProductCard. */
 export function ProductGrid({ products, eager = 0, sizes }: GridProps) {
   return (
     <ul className="grid">
@@ -28,17 +27,12 @@ export function ProductGrid({ products, eager = 0, sizes }: GridProps) {
 
 type CardProps = {
   product: CardProduct
-  /** A foto carrega junto com a página, sem lazy loading. */
   eager?: boolean
-  /** A foto é candidata a maior elemento da tela (LCP) e tem prioridade no carregamento. */
   priority?: boolean
   sizes?: string
 }
 
-/**
- * Um produto na grade: foto, etiqueta de desconto, selos, nome e preço.
- * Classes: card, card-media, card-tag, card-name e as de Flags.
- */
+/** Classes: card, card-media, card-tag, card-name e as de Flags. */
 export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]

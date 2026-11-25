@@ -2,8 +2,6 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fromCheckout } from './prices.ts'
 
-// Respostas da API de preços na loja modelo, só com os campos lidos e duas das doze parcelas.
-
 test('preço em promoção: a parcela é a do preço final, com Pix e as parcelas uma a uma', () => {
   const row = { amount_formated: 'R$ 231,66', tax: '0.00', installment_value: '115.83' }
   const { prices, installments } = fromCheckout({
@@ -13,7 +11,6 @@ test('preço em promoção: a parcela é a do preço final, com Pix e as parcela
     percent_discount: 10.9,
     payment_methods: { pix: { discount: 3, price: 224.71 } },
     installments_data: {
-      // No detalhe do produto, a API principal informa "12x de R$ 19,50": os R$ 234,00 de cadastro, sem a promoção da loja.
       text: '12x de R$ 19,31 sem juros',
       installments: [
         { ...row, installment: 1, text: '1x de R$ 231,66', amount: '231.66', base_value: '231.66' },

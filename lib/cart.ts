@@ -1,15 +1,10 @@
-// O carrinho como a loja o mostra, a partir da resposta do checkout da Yampi.
-
-/** Uma linha do carrinho: um SKU ou um kit inteiro. */
 export type CartItem = {
-  /** Id do item no checkout (num kit, o de um dos itens: alterar ou remover um vale para o kit todo). */
+  /** Num kit, o id de um dos itens: alterar ou remover um vale para o kit todo. */
   id: number
   name: string
-  /** Fotos da linha; um kit tem uma por item. */
   images: string[]
   price: number
   quantity: number
-  /** Num kit, o que vem dentro dele. */
   parts?: string[]
 }
 
@@ -24,17 +19,14 @@ type Item = {
   medium?: string
   price: number | string
   quantity: number | string
-  /** Preenchido nos itens que entraram como parte de um kit. */
   bundle_id?: number | null
 }
 
-/** Só o que a loja lê da resposta de {checkout}/cart/*. */
 export type CheckoutCart = {
   items?: Item[]
-  /** Um representante de cada kit, com o nome e quantos kits há no carrinho. Sem kits, vem `[]`. */
+  /** Um representante de cada kit; sem kits, a API manda `[]`. */
   grouped_items?: Record<string, { bundle_id?: number | null; bundle?: { name?: string; quantity?: number } | null }> | unknown[]
   prices?: { total: number | string; discount?: number | string }
-  /** Nome das promoções aplicadas (desconto progressivo, compre e leve…). */
   discounts_labels?: string | null
 }
 
@@ -47,7 +39,6 @@ export function toCart(cart: CheckoutCart | null | undefined): Cart {
   const lines = items.flatMap((item, index): CartItem[] => {
     if (!item.bundle_id) return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity) }]
 
-    // Os itens de um kit viram uma linha só, na posição do primeiro deles.
     const parts = items.filter((other) => other.bundle_id === item.bundle_id)
     if (items.indexOf(parts[0]) !== index) return []
     const kit = kits.find((group) => group.bundle_id === item.bundle_id)?.bundle

@@ -1,9 +1,5 @@
-// As contas das ofertas do produto: desconto por quantidade e kits. Repetem o que o checkout da
-// Yampi faz ao montar o carrinho, para a página prometer o valor que será cobrado.
-
 const cents = (value: number) => Math.round(value * 100) / 100
 
-/** Faixa de desconto por quantidade: a partir de `quantity` unidades, vale `value` no modo `mode`. */
 export type Tier = {
   quantity: number
   /** percent = % de desconto · unit = preço de cada unidade · group = preço do lote de `quantity` unidades. */
@@ -11,7 +7,7 @@ export type Tier = {
   value: number
 }
 
-/** O que interessa de GET …/products/{id}/discounts. */
+/** GET …/products/{id}/discounts */
 export type Discounts = {
   progressive_discounts?: { discount_type: string; min_quantity: number; percent: number }[]
   buy_x_pay_y?: {
@@ -21,12 +17,7 @@ export type Discounts = {
   }[]
 }
 
-/**
- * As faixas "leve N" de um produto, da menor quantidade para a maior: saem do desconto
- * progressivo legado e do multi-faixa (`buy_x_pay_y`).
- * ponytail: ficam de fora as faixas por valor da compra e o "compre X leve Y" (`buy_x_get_y`);
- * o carrinho aplica todos, a página só anuncia os que dependem da quantidade.
- */
+// ponytail: só as faixas por quantidade; as por valor da compra e o "compre X leve Y" o carrinho aplica sem anúncio.
 export function quantityTiers({ progressive_discounts = [], buy_x_pay_y = [] }: Discounts): Tier[] {
   const legacy = progressive_discounts
     .filter((discount) => discount.discount_type === 'quantity')
@@ -43,7 +34,6 @@ export function quantityTiers({ progressive_discounts = [], buy_x_pay_y = [] }: 
   return [...legacy, ...tiered].filter((tier) => tier.quantity > 1 && tier.value > 0).sort((a, b) => a.quantity - b.quantity)
 }
 
-/** Quanto custam as `tier.quantity` unidades da faixa e quanto isso economiza sobre o preço avulso. */
 export function tierOffer(tier: Tier, price: number) {
   const full = price * tier.quantity
   const total = cents(tier.mode === 'percent' ? full * (1 - tier.value / 100) : tier.mode === 'unit' ? tier.value * tier.quantity : tier.value)
@@ -51,6 +41,5 @@ export function tierOffer(tier: Tier, price: number) {
   return { total, saving: cents(full - total) }
 }
 
-/** Preço de uma unidade de um item dentro do kit: o do SKU, o do SKU com desconto ou um valor fixo. */
 export const kitPrice = (item: { price_type: string; price: number; discount: number }, skuPrice: number) =>
   item.price_type === 'custom' ? item.price : item.price_type === 'discount' ? cents(skuPrice * (1 - item.discount / 100)) : skuPrice

@@ -3,13 +3,12 @@
 import type { ReactNode } from 'react'
 
 type Props = {
-  /** Id do menu: é o alvo (`popoverTarget`) do botão que o abre no celular. */
   id?: string
   label?: string
   children: ReactNode
 }
 
-/** Navegação principal, como popover nativo: o tema decide se é barra (desktop) ou gaveta (celular). Classe: menu. */
+/** Classe: menu. */
 export function Menu({ id = 'menu', label = 'Categorias', children }: Props) {
   return (
     <nav
