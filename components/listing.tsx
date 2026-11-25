@@ -35,6 +35,8 @@ type Props = {
   trail?: Crumb[]
   siteUrl?: string
   description?: string | null
+  /** As ordenações oferecidas, na ordem dos links; a busca só aceita as de `SEARCH_SORTS`. */
+  sorts?: Sort[]
   eager?: number
   sizes?: string
   labels?: Partial<ListingLabels>
@@ -45,10 +47,10 @@ type Props = {
  * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
  * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
-export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, eager = 4, sizes, labels, children, products, total, pages }: Props) {
+export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], eager = 4, sizes, labels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
   const href = (next: ListingState) => listingHref(base, next, extra)
-  const sorts: [Sort | undefined, string][] = [[undefined, t.featured], ...(Object.entries(SORTS) as [Sort, string][])]
+  const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, SORTS[sort]])]
   const filtering = Object.values(state.filters ?? {}).flat().length
 
   return (
@@ -68,7 +70,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
             {filtering > 0 && ` (${filtering})`}
           </button>
         )}
-        {sorts.map(([sort, label]) => (
+        {options.map(([sort, label]) => (
           <Link key={label} href={href({ ...state, sort_by: sort, page: 1 })} aria-current={sort === state.sort_by ? 'true' : undefined}>
             {label}
           </Link>

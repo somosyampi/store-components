@@ -25,7 +25,15 @@ type Aggs = {
 /** Corte de relevância que a vitrine da Yampi envia nas duas rotas. */
 const MIN_SCORE = '9'
 
-const ORDER: Record<Sort, string> = { newest: 'external_created_at', lowest_price: 'price:asc', highest_price: 'price:desc' }
+// O serviço de busca não ordena por nome.
+const ORDER: Partial<Record<Sort, string>> = {
+  best_sellers: 'total_orders',
+  newest: 'external_created_at',
+  rating: 'rating',
+  lowest_price: 'price:asc',
+  highest_price: 'price:desc',
+}
+export const SEARCH_SORTS = Object.keys(ORDER) as Sort[]
 
 type Source = { endpoint: string; storeId: number; signal?: AbortSignal }
 
@@ -80,7 +88,7 @@ export async function search({ q, limit = 24, page, sort_by, filters = {}, ...so
     ['include', 'id,name,slug,image_url,price,discount_price'],
     ['limit', String(limit)],
     ['page', String(page)],
-    ...(sort_by ? [['sort', ORDER[sort_by]] as [string, string]] : []),
+    ...(sort_by && ORDER[sort_by] ? [['sort', ORDER[sort_by]] as [string, string]] : []),
     ...(filters.categories_name ?? []).map((name): [string, string] => ['categories_name[]', name]),
     ...(filters.brand_name ?? []).map((name): [string, string] => ['brand_name[]', name]),
     ...(attributes ? [['attributes', attributes] as [string, string]] : []),

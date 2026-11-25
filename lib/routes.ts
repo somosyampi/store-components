@@ -1,4 +1,12 @@
-export const SORTS = { newest: 'Novidades', lowest_price: 'Menor preço', highest_price: 'Maior preço' } as const
+export const SORTS = {
+  best_sellers: 'Mais vendidos',
+  newest: 'Novidades',
+  rating: 'Melhor avaliação',
+  lowest_price: 'Menor preço',
+  highest_price: 'Maior preço',
+  name_asc: 'A–Z',
+  name_desc: 'Z–A',
+} as const
 export type Sort = keyof typeof SORTS
 
 export const CONTEXTS = { categoria: 'category', colecao: 'collection', promocao: 'promotion' } as const
