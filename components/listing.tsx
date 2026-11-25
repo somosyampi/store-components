@@ -35,8 +35,8 @@ type Props = {
   extra?: Record<string, string>
   facets: Facet[]
   trail?: Crumb[]
-  /** Endereço público da loja, para a trilha de navegação enviada aos buscadores. */
-  siteUrl: string
+  /** Endereço público da loja, para a trilha de navegação enviada aos buscadores (ver `Crumbs`). */
+  siteUrl?: string
   /** Texto de apresentação cadastrado pelo lojista (HTML), exibido depois dos produtos. */
   description?: string | null
   /** Quantos cards ficam acima da dobra, e o `sizes` das fotos na grade do tema (ver `ProductGrid`). */
@@ -62,7 +62,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
   return (
     <div className="page">
       <header className="listing-head">
-        <Crumbs trail={trail} siteUrl={siteUrl} labels={t} />
+        <Crumbs trail={trail} current={title} siteUrl={siteUrl} labels={t} />
         <h1>{title}</h1>
         <p className="note">{plural(t.count_one, t.count_other, total)}</p>
       </header>

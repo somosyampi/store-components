@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { kitPrice, quantityTiers, schemaOffer, tierOffer, type Tier } from './offers.ts'
+import { kitPrice, quantityTiers, tierOffer, type Tier } from './offers.ts'
 
 // Os valores esperados são os que o checkout da Yampi cobrou pelos mesmos itens na loja modelo.
 
@@ -41,29 +41,4 @@ test('kit: o preço de cada item segue a regra do kit', () => {
   assert.equal(kitPrice({ price_type: 'discount', price: 1620, discount: 5 }, 1603.8), 1523.61)
   assert.equal(kitPrice({ price_type: 'custom', price: 350, discount: 0 }, 499.9), 350)
   assert.equal(kitPrice({ price_type: 'sku', price: 559.9, discount: 0 }, 554.3), 554.3)
-})
-
-test('oferta para os buscadores: só os SKUs à venda entram no preço', () => {
-  const sku = (price: number, blocked_sale = false) => ({ blocked_sale, prices: { data: { price } } })
-  const InStock = 'https://schema.org/InStock'
-
-  // Scarpin da loja modelo: sete numerações esgotadas a R$ 379,90 e uma à venda, a R$ 459,90.
-  assert.deepEqual(schemaOffer([...Array.from({ length: 7 }, () => sku(379.9, true)), sku(459.9)], 459.9), {
-    '@type': 'Offer',
-    price: 459.9,
-    priceCurrency: 'BRL',
-    availability: InStock,
-  })
-  assert.deepEqual(schemaOffer([sku(100), sku(80), sku(50, true)], 80), {
-    '@type': 'AggregateOffer',
-    lowPrice: 80,
-    highPrice: 100,
-    offerCount: 2,
-    priceCurrency: 'BRL',
-    availability: InStock,
-  })
-  // Nada à venda: esgotado, com o preço de cadastro. Sem SKUs, vale o preço do produto.
-  const soldOut = { '@type': 'Offer', priceCurrency: 'BRL', availability: 'https://schema.org/OutOfStock' }
-  assert.deepEqual(schemaOffer([sku(90, true)], 80), { ...soldOut, price: 90 })
-  assert.deepEqual(schemaOffer([], 70), { ...soldOut, price: 70 })
 })

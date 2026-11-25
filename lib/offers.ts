@@ -1,5 +1,5 @@
-// As contas das ofertas da página de produto — desconto por quantidade, kits e a oferta lida
-// pelos buscadores — num lugar só e sem dependências, para poderem ser testadas com `npm test`.
+// As contas das ofertas da página de produto — desconto por quantidade e kits — num lugar só
+// e sem dependências, para poderem ser testadas com `npm test`.
 // Elas repetem o que o checkout da Yampi faz ao montar o carrinho: a página promete o valor que
 // será cobrado.
 
@@ -57,21 +57,3 @@ export function tierOffer(tier: Tier, price: number) {
 /** Preço de uma unidade de um item dentro do kit: o do SKU, o do SKU com desconto ou um valor fixo. */
 export const kitPrice = (item: { price_type: string; price: number; discount: number }, skuPrice: number) =>
   item.price_type === 'custom' ? item.price : item.price_type === 'discount' ? cents(skuPrice * (1 - item.discount / 100)) : skuPrice
-
-/**
- * A oferta do produto como os buscadores a leem (schema.org). Só contam os SKUs que podem ser
- * comprados: um tamanho esgotado mais barato não vira o "a partir de" do resultado da busca.
- * Sem nenhum à venda, a oferta sai como esgotada, com os preços de cadastro.
- */
-export function schemaOffer(skus: { blocked_sale: boolean; prices: { data: { price: number } } }[], productPrice: number) {
-  const sellable = skus.filter((sku) => !sku.blocked_sale)
-  const amounts = (sellable.length ? sellable : skus).map((sku) => sku.prices.data.price)
-  const low = amounts.length ? Math.min(...amounts) : productPrice
-  const high = amounts.length ? Math.max(...amounts) : productPrice
-
-  return {
-    ...(low === high ? { '@type': 'Offer', price: low } : { '@type': 'AggregateOffer', lowPrice: low, highPrice: high, offerCount: amounts.length }),
-    priceCurrency: 'BRL',
-    availability: `https://schema.org/${sellable.length ? 'InStock' : 'OutOfStock'}`,
-  }
-}

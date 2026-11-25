@@ -15,6 +15,9 @@ export type Image = { url: string }
 
 export type Sku = {
   id: number
+  /** Código do SKU e código de barras (EAN/GTIN): só os dados estruturados os usam. */
+  sku?: string | null
+  barcode?: string | null
   blocked_sale: boolean
   /** IDs dos valores de variação que formam o SKU, separados por hífen. */
   combinations: string

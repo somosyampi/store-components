@@ -1,6 +1,6 @@
 {
   "name": "@yampi/store-components",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Componentes React sem estilo para lojas construídas sobre as APIs públicas da Yampi.",
   "type": "module",
   "sideEffects": false,

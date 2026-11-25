@@ -1,7 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { brl } from '../lib/format'
 import { fill } from '../lib/labels'
 import { tierOffer, type Tier } from '../lib/offers'
@@ -60,6 +61,27 @@ function pan(stage: HTMLElement, x: number, y: number) {
 
 /** O SKU contém todos os valores de variação escolhidos? */
 const has = (sku: Sku, values: number[]) => values.every((value) => sku.combinations.split('-').includes(String(value)))
+
+/**
+ * Abre a página com a variação de `?sku={id}` já escolhida: é o endereço de cada variante nos
+ * dados estruturados (ver lib/schema.ts). Fica à parte, sob <Suspense>, porque ler a URL dentro
+ * da própria ProductView impediria o pré-render dela.
+ */
+function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Variation[]; onPick(values: number[]): void }) {
+  const id = Number(useSearchParams().get('sku'))
+  const applied = useRef(0)
+
+  useEffect(() => {
+    // Uma vez por SKU pedido: ao voltar a esta página, vale o que o visitante escolheu depois.
+    if (!id || applied.current === id) return
+    applied.current = id
+
+    const values = skus.find((sku) => sku.id === id)?.combinations.split('-')
+    if (values) onPick(variations.flatMap((variation) => variation.values.data.find((value) => values.includes(String(value.id)))?.id ?? []))
+  }, [id, skus, variations, onPick])
+
+  return null
+}
 
 /**
  * A compra de um produto: galeria com zoom, preço (com Pix e parcelas), variações, desconto por
@@ -130,6 +152,10 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
 
   return (
     <div className="product">
+      <Suspense fallback={null}>
+        <SkuFromUrl skus={skus} variations={variations} onPick={setPicked} />
+      </Suspense>
+
       <div className="gallery">
         <button
           className="gallery-main"
