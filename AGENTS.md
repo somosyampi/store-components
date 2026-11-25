@@ -60,15 +60,38 @@ acessibilidade. Por isso:
 - Os dados estruturados de `schema.ts` seguem a documentação do Google para lojas: página de
   compra usa `Offer`, e variações são um `ProductGroup` com um endereço por variante.
 
-## Código e comentários
+## Código
 
 - Identificadores em inglês; comentários e textos em português.
-- Comente o porquê que não é óbvio (um comportamento da API, do navegador ou do React), não
-  o que o nome já diz. O docblock de um componente é curto e termina nas classes dele.
-- Atalho deliberado leva `ponytail:`, com o limite dele e o caminho para ampliar.
 - O mínimo que resolve: sem abstração para um uso só e sem prop que nenhum tema pediu.
 - Antes de usar uma API do Next, leia a documentação da versão instalada, em
   `node_modules/next/dist/docs/`: ela mudou em relação às versões anteriores.
+
+## Comentários
+
+O padrão é não comentar. Nome, tipo e código dizem o que é feito; um comentário só entra para
+dizer o que eles não conseguem, e são três os casos:
+
+1. **O porquê de algo que parece estranho ou errado a quem lê:** um comportamento da API da
+   Yampi, do navegador, do React ou do Next, ou uma decisão que alguém desfaria sem saber o
+   motivo (`// mousedown (e não click) para agir antes de o campo perder o foco.`).
+2. **`ponytail:`** num atalho deliberado, com o limite dele e o caminho para ampliar.
+3. **A linha `Classes:`** de cada componente exportado, com as variáveis CSS e os atributos
+   `data-*` que ele emite. É o docblock inteiro do componente.
+
+Cada comentário cabe em uma linha; só a lista de classes pode ocupar mais. Não escreva:
+
+- docblock que descreve o componente, a função ou o tipo, ou que repete o nome e a assinatura;
+- descrição de prop, campo, parâmetro ou retorno. A exceção é o que o tipo não mostra e muda
+  o uso: uma unidade (`/** Em meses. */`) ou um formato que a API devolve;
+- cabeçalho de arquivo contando o que o módulo faz;
+- comentário que narra o código (`// busca os produtos`) ou a história de uma mudança;
+- comentário em teste dizendo o que ele verifica: isso é o nome do teste;
+- explicação longa. Ela vai para a mensagem de commit e a descrição do pull request; o que
+  vale para o repositório inteiro, para este arquivo.
+
+Na dúvida, não comente. Antes de abrir um pull request, releia cada comentário do diff com
+esse filtro; ao mexer num arquivo, apague os comentários dele que não passam.
 
 ## Antes de publicar
 
