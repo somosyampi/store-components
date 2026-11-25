@@ -9,12 +9,12 @@ import { comboOffer, type Combo } from '../lib/offers'
 import { useCart } from './cart'
 import { Price } from './price'
 
-const LABELS = { title: 'Compre junto e economize', choose: 'Selecionar', saving: 'Economize {value}', buy: 'Comprar junto', unavailable: 'Indisponível' }
+const LABELS = { title: 'Compre junto e economize', choose: 'Selecionar', total: 'Juntos por', saving: 'Economize {value}', buy: 'Comprar junto', unavailable: 'Indisponível' }
 export type CombosLabels = typeof LABELS
 
 type Props = { combos: Combo[]; sizes?: string; labels?: Partial<CombosLabels> }
 
-/** Classes: combos, combo, combo-items, combo-media, combo-name, combo-total e a de Price. De uso geral: note, saving, button. */
+/** Classes: combos, combo, combo-items, combo-media, combo-name, combo-total e a de Price. De uso geral: eyebrow, note, saving, button. */
 export function Combos({ combos, sizes = '160px', labels }: Props) {
   if (!combos.length) return null
   const t = { ...LABELS, ...labels }
@@ -52,19 +52,22 @@ function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: Combo
                 <span className="combo-name">{product.name}</span>
               </Link>
               {product.skus.data.length > 1 && (
-                <select
-                  required
-                  aria-label={product.name}
-                  value={picked[index] || ''}
-                  onChange={(event) => setPicked(picked.map((id, position) => (position === index ? Number(event.target.value) : id)))}
-                >
-                  <option value="">{t.choose}</option>
-                  {product.skus.data.map((sku) => (
-                    <option key={sku.id} value={sku.id} disabled={sku.blocked_sale}>
-                      {sku.variations?.map((variation) => variation.value).join(' / ')}
-                    </option>
-                  ))}
-                </select>
+                <label>
+                  <span className="note">{product.skus.data[0].variations?.map((variation) => variation.name).join(' / ')}</span>
+                  <select
+                    required
+                    aria-label={product.name}
+                    value={picked[index] || ''}
+                    onChange={(event) => setPicked(picked.map((id, position) => (position === index ? Number(event.target.value) : id)))}
+                  >
+                    <option value="">{t.choose}</option>
+                    {product.skus.data.map((sku) => (
+                      <option key={sku.id} value={sku.id} disabled={sku.blocked_sale}>
+                        {sku.variations?.map((variation) => variation.value).join(' / ')}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
             </li>
           )
@@ -72,6 +75,7 @@ function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: Combo
       </ul>
 
       <div className="combo-total">
+        <p className="eyebrow">{t.total}</p>
         <Price prices={{ price: offer.total, price_sale: offer.full, has_promotion: offer.saving > 0, percent_discount: 0 }} />
         {offer.saving > 0 && <p className="note saving">{fill(t.saving, { value: brl(offer.saving) })}</p>}
         <button

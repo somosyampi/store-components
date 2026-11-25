@@ -9,7 +9,10 @@ export type ReviewsLabels = typeof LABELS & RatingLabels
 
 type Props = { ratings: Ratings; reviews: Review[]; labels?: Partial<ReviewsLabels> }
 
-/** Classes: reviews, reviews-summary, reviews-bars, reviews-bar (com a fração de cada nota em `--share`, de 0 a 1), review, review-photos e as de Rating. */
+/**
+ * Classes: reviews, reviews-summary, reviews-average, reviews-bars, reviews-bar (com a fração de cada nota em
+ * `--share`, de 0 a 1), review, review-photos e as de Rating. De uso geral: byline.
+ */
 export function Reviews({ ratings, reviews, labels }: Props) {
   if (!ratings.total) return null
   const t = { ...LABELS, ...labels }
@@ -19,6 +22,7 @@ export function Reviews({ ratings, reviews, labels }: Props) {
       <h2>{t.title}</h2>
 
       <div className="reviews-summary">
+        <strong className="reviews-average">{Number(ratings.average_rating).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
         <Rating value={ratings.average_rating} count={ratings.total} labels={labels} />
         <ul className="reviews-bars">
           {[5, 4, 3, 2, 1].map((stars) => (
@@ -34,7 +38,7 @@ export function Reviews({ ratings, reviews, labels }: Props) {
       <ul>
         {reviews.map((review, index) => (
           <li key={index} className="review">
-            <p>
+            <p className="byline">
               <strong>{review.name}</strong> <time dateTime={review.created_at.date.slice(0, 10)}>{day(review.created_at.date)}</time>
             </p>
             <Rating value={review.rating} labels={labels} />

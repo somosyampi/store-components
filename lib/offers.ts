@@ -62,7 +62,7 @@ export type Combo = {
       name: string
       slug: string
       images: { data: { url: string }[] }
-      skus: { data: { id: number; blocked_sale: boolean; prices: { data: { price: number } }; images: { data: { url: string }[] }; variations?: { value: string }[] }[] }
+      skus: { data: { id: number; blocked_sale: boolean; prices: { data: { price: number } }; images: { data: { url: string }[] }; variations?: { name?: string; value: string }[] }[] }
     }[]
   }
 }
