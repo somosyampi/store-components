@@ -27,7 +27,8 @@ function Art({ banner, storeUrl, sizes, priority = false, className }: ArtProps)
 
   const picture = (
     <picture className={className}>
-      {mobile && <source media="(max-width: 699px)" srcSet={mobile.srcSet} sizes={sizes} width={mobile.width} height={mobile.height} />}
+      {/* Com `images.unoptimized`, o Next não gera `srcSet`: sem ele o navegador ignoraria a arte do celular. */}
+      {mobile && <source media="(max-width: 699px)" srcSet={mobile.srcSet ?? mobile.src} sizes={sizes} width={mobile.width} height={mobile.height} />}
       <img {...desktop} />
     </picture>
   )
