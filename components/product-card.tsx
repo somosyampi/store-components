@@ -57,7 +57,8 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
         {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} /> : null}
       </Link>
       <Price prices={prices} />
-      {quickBuy && <QuickBuy product={product} />}
+      {/* ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. */}
+      {quickBuy && product.sku_id && !product.has_variations && !product.blocked_sale && <QuickBuy skuId={product.sku_id} name={product.name} />}
     </li>
   )
 }
