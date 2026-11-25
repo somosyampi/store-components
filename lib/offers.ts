@@ -74,6 +74,22 @@ export function comboOffer({ discount_type, discount_value }: Pick<Combo, 'disco
   return { full, total, saving: cents(full - total) }
 }
 
+// Produto sem SKU não tem preço nem o que pôr no carrinho.
+export const buyable = (combos: Combo[]) => combos.filter((combo) => combo.products.data.every((product) => product.skus.data.length > 0))
+
+/** Por id de produto, o id do SKU que o visitante escolheu. */
+export type Picks = Record<number, number>
+
+export function comboChoice(combo: Combo, picked: Picks = {}) {
+  const sellable = combo.products.data.map((product) => product.skus.data.filter((sku) => !sku.blocked_sale))
+  // A escolha só vale enquanto o SKU está à venda, e o único à venda já vem escolhido.
+  const skus = combo.products.data.map((product, index) => sellable[index].find((sku) => sku.id === picked[product.id]) ?? (sellable[index].length === 1 ? sellable[index][0] : undefined))
+  // Antes da escolha, a conta usa o primeiro SKU à venda: os bloqueados podem ter outro preço.
+  const prices = combo.products.data.map((product, index) => (skus[index] ?? sellable[index][0] ?? product.skus.data[0]).prices.data.price)
+
+  return { skus, available: sellable.every((list) => list.length > 0), ...comboOffer(combo, prices) }
+}
+
 /** GET …/products/{id}/bundles */
 export type Bundle = {
   id: number

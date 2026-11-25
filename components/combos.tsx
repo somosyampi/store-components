@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { brl } from '../lib/format'
 import { fill } from '../lib/labels'
-import { comboOffer, type Combo } from '../lib/offers'
+import { buyable, comboChoice, type Combo, type Picks } from '../lib/offers'
 import { useCart } from './cart'
 import { Price } from './price'
 
@@ -16,8 +16,7 @@ type Props = { combos: Combo[]; sizes?: string; labels?: Partial<CombosLabels> }
 
 /** Classes: combos, combo, combo-items, combo-media, combo-name, combo-total e a de Price. De uso geral: eyebrow, note, saving, button. */
 export function Combos({ combos, sizes = '160px', labels }: Props) {
-  // Produto sem SKU não tem preço nem o que pôr no carrinho: a oferta dele não aparece.
-  const offers = combos.filter((combo) => combo.products.data.every((product) => product.skus.data.length > 0))
+  const offers = buyable(combos)
   if (!offers.length) return null
   const t = { ...LABELS, ...labels }
 
@@ -33,13 +32,9 @@ export function Combos({ combos, sizes = '160px', labels }: Props) {
 
 function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: CombosLabels }) {
   const cart = useCart()
-  const products = combo.products.data.map((product) => ({ ...product, sellable: product.skus.data.filter((sku) => !sku.blocked_sale) }))
-  const [picked, setPicked] = useState<Record<number, number>>({})
-  // A escolha só vale enquanto o SKU está à venda, e o único à venda já vem escolhido. A cada renderização: os dados podem mudar com a página aberta.
-  const skus = products.map((product) => product.sellable.find((sku) => sku.id === picked[product.id]) ?? (product.sellable.length === 1 ? product.sellable[0] : undefined))
-  const available = products.every((product) => product.sellable.length > 0)
-  // Antes da escolha, a conta usa o primeiro SKU à venda: os bloqueados podem ter outro preço.
-  const offer = comboOffer(combo, products.map((product, index) => (skus[index] ?? product.sellable[0] ?? product.skus.data[0]).prices.data.price))
+  const [picked, setPicked] = useState<Picks>({})
+  const { skus, available, full, total, saving } = comboChoice(combo, picked)
+  const products = combo.products.data
 
   return (
     <div className="combo">
@@ -78,8 +73,8 @@ function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: Combo
 
       <div className="combo-total">
         <p className="eyebrow">{t.total}</p>
-        <Price prices={{ price: offer.total, price_sale: offer.full, has_promotion: offer.saving > 0, percent_discount: 0 }} />
-        {offer.saving > 0 && <p className="note saving">{fill(t.saving, { value: brl(offer.saving) })}</p>}
+        <Price prices={{ price: total, price_sale: full, has_promotion: saving > 0, percent_discount: 0 }} />
+        {saving > 0 && <p className="note saving">{fill(t.saving, { value: brl(saving) })}</p>}
         <button
           className="button"
           disabled={cart.busy || !available}
