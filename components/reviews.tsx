@@ -53,7 +53,9 @@ export function Reviews({ ratings, reviews, visible = 0, labels }: Props) {
       <h2>{t.title}</h2>
 
       <div className="reviews-summary">
-        <strong className="reviews-average">{Number(ratings.average_rating).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
+        {Number(ratings.average_rating) > 0 && (
+          <strong className="reviews-average">{Number(ratings.average_rating).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
+        )}
         <Rating value={ratings.average_rating} count={ratings.total} labels={labels} />
         <ul className="reviews-bars">
           {[5, 4, 3, 2, 1].map((stars) => (
