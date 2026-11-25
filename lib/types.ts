@@ -10,7 +10,7 @@ export type Prices = {
 
 export type Image = { url: string }
 
-export type Category = { id: number; name: string; slug: string; children?: { data: Category[] } }
+export type Category = { id: number; name: string; slug: string; category_cover?: string | null; children?: { data: Category[] } }
 
 export type Flag = { id: number; name: string; text_color?: string | null; background_color?: string | null }
 
