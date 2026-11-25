@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { quickBuySku } from '../lib/cart'
 import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
 import { Price } from './price'
@@ -44,6 +45,7 @@ type CardProps = {
 export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES, quickBuy = false, labels }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]
+  const quick = quickBuy ? quickBuySku(product) : null
 
   return (
     <li className="card">
@@ -61,8 +63,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
         {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} labels={labels} /> : null}
       </Link>
       <Price prices={prices} />
-      {/* ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. A listagem não diz quem exige personalização: esse o checkout recusa, e o carrinho mostra o motivo. */}
-      {quickBuy && product.sku_id && product.has_variations === false && product.blocked_sale === false && <QuickBuy skuId={product.sku_id} name={product.name} labels={labels} />}
+      {quick && <QuickBuy skuId={quick} name={product.name} labels={labels} />}
     </li>
   )
 }
