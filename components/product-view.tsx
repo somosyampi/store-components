@@ -29,6 +29,8 @@ const LABELS = {
   allInstallments: 'Ver parcelas',
   installmentTotal: 'total de {value}',
   cashback: 'Ganhe {percent}% de cashback',
+  lowStock_one: 'Resta {count} unidade',
+  lowStock_other: 'Restam {count} unidades',
   pix: 'no Pix',
   saving: 'Economize {value}',
   off: '{percent}% off',
@@ -57,6 +59,8 @@ type Props = {
   /** De `checkoutPrices` (lib/prices.ts), não do catálogo. */
   installments?: Installment[]
   cashbacks?: Cashback[]
+  /** Com até quantas unidades em estoque o SKU escolhido avisa que está acabando; 0 desliga. */
+  lowStock?: number
   sizes?: string
   thumb?: { width: number; height: number }
   labels?: Partial<ProductViewLabels>
@@ -90,7 +94,7 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 /**
  * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
  * ampliada), zoom-photo, zoom-controls, product-info, product-rating, product-facts, product-price, installments,
- * cashback, pix, options, tiers, tiers-title, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
+ * cashback, pix, options, tiers, tiers-title, stock-low, buy e as de Flags e Rating. De uso geral: eyebrow, note, saving, tag,
  * icon-button, button, sr-only. Enquanto está na tela, o <html> leva `data-buy-bar`.
  */
 export function ProductView({
@@ -106,6 +110,7 @@ export function ProductView({
   warranty = 0,
   installments = [],
   cashbacks,
+  lowStock = 5,
   sizes = '(min-width: 900px) 50vw, 100vw',
   thumb = { width: 64, height: 64 },
   labels,
@@ -157,6 +162,7 @@ export function ProductView({
   const samePrice = price.price === prices.price
   const installmentText = samePrice ? prices.installments?.data?.text : undefined
   const cashback = cashbackFor(price.price, cashbacks)
+  const stock = sku?.total_in_stock ?? 0
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
 
@@ -332,6 +338,8 @@ export function ProductView({
             </ul>
           </div>
         )}
+
+        {stock > 0 && stock <= lowStock && <p className="stock-low">{plural(t.lowStock_one, t.lowStock_other, stock)}</p>}
 
         <div className="buy" onPointerEnter={cart.warm}>
           <label>

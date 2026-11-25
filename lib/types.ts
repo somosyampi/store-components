@@ -22,6 +22,7 @@ export type Sku = {
   sku?: string | null
   barcode?: string | null
   days_availability_formated?: string | null
+  total_in_stock?: number | null
   blocked_sale: boolean
   /** Ids dos valores de variação, separados por hífen. */
   combinations: string
