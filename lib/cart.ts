@@ -6,6 +6,8 @@ export type CartItem = {
   price: number
   quantity: number
   parts?: string[]
+  /** Itens de um "compre junto": saem juntos do carrinho e não mudam de quantidade. */
+  combo?: boolean
 }
 
 export type Cart = { items: CartItem[]; count: number; total: number; discount: number; discountLabel: string }
@@ -20,6 +22,8 @@ type Item = {
   price: number | string
   quantity: number | string
   bundle_id?: number | null
+  /** O id do "compre junto"; o desconto dele vem no total do carrinho, não no item. */
+  kit_id?: number | null
 }
 
 export type CheckoutCart = {
@@ -37,21 +41,22 @@ export function toCart(cart: CheckoutCart | null | undefined): Cart {
   const kits = Object.values(cart?.grouped_items ?? {}) as { bundle_id?: number | null; bundle?: { name?: string; quantity?: number } | null }[]
 
   const lines = items.flatMap((item, index): CartItem[] => {
-    if (!item.bundle_id) return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity) }]
+    if (!item.bundle_id && !item.kit_id) return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity) }]
 
-    const parts = items.filter((other) => other.bundle_id === item.bundle_id)
+    const parts = items.filter((other) => (item.bundle_id ? other.bundle_id === item.bundle_id : other.kit_id === item.kit_id))
     if (items.indexOf(parts[0]) !== index) return []
-    const kit = kits.find((group) => group.bundle_id === item.bundle_id)?.bundle
+    const kit = kits.find((group) => group.bundle_id && group.bundle_id === item.bundle_id)?.bundle
     const quantity = Number(kit?.quantity) || 1
 
     return [
       {
         id: item.id,
-        name: kit?.name || 'Kit',
+        name: kit?.name || (item.bundle_id ? 'Kit' : ''),
         images: [...new Set(parts.map(photo).filter(Boolean))],
-        price: parts.reduce((total, part) => total + Number(part.price) * Number(part.quantity), 0) / quantity,
+        price: Math.round((parts.reduce((total, part) => total + Number(part.price) * Number(part.quantity), 0) / quantity) * 100) / 100,
         quantity,
         parts: parts.map((part) => (Number(part.quantity) > quantity ? `${Number(part.quantity) / quantity} × ${name(part)}` : name(part))),
+        ...(!item.bundle_id && { combo: true }),
       },
     ]
   })

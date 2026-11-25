@@ -9,6 +9,8 @@ import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
 
 export type Line = { skuId: number; quantity: number }
+/** Os SKUs entram como um kit (`products/{id}/bundles`) ou como um "compre junto" (`products/{id}/combos`). */
+export type Group = { kit?: number; combo?: number }
 
 type CheckoutResponse = { cart?: CheckoutCart | null; error?: boolean; message?: string | { message?: string }[] }
 
@@ -21,6 +23,7 @@ const LABELS = {
   quantity: 'Quantidade: {count}',
   increase: 'Aumentar quantidade de {name}',
   remove: 'Remover',
+  combo: 'Compre junto',
   discount: 'Desconto',
   subtotal: 'Subtotal',
   note: 'Frete e cupons são calculados no checkout.',
@@ -76,12 +79,13 @@ function checkoutCart(checkout: Checkout, failed: string) {
 
   return {
     load: async () => (stored ? send('GET', url(checkout.items_json)) : EMPTY),
-    add: (lines: Line[], kitId?: number) =>
+    add: (lines: Line[], group: Group = {}) =>
       send('POST', url(checkout.items), {
         product_option_id: lines.map((line) => line.skuId),
         quantity: lines.map((line) => line.quantity),
-        // Com o id do kit junto dos SKUs, o checkout cobra o preço do kit.
-        ...(kitId && { bundle_id: kitId }),
+        // Com `bundle_id` o checkout cobra o preço do kit; com `kit_id`, dá o desconto do "compre junto".
+        ...(group.kit && { bundle_id: group.kit }),
+        ...(group.combo && { kit_id: group.combo }),
         metadata: { source_platform: 'headless' },
       }),
     update: (item: CartItem, quantity: number) =>
@@ -96,7 +100,7 @@ type Api = ReturnType<typeof checkoutCart>
 const CartContext = createContext<{
   count: number
   busy: boolean
-  add(lines: Line[], kitId?: number): Promise<void>
+  add(lines: Line[], group?: Group): Promise<void>
   open(): void
   warm(): void
 } | null>(null)
@@ -156,8 +160,8 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
         busy,
         open,
         warm: () => preconnect(new URL(checkout.items).origin),
-        add: async (lines, kitId) => {
-          await run((api) => api.add(lines, kitId))
+        add: async (lines, group) => {
+          await run((api) => api.add(lines, group))
           open()
         },
       }}
@@ -199,21 +203,25 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
                       ))}
                     </div>
                     <div>
-                      <p>{item.name}</p>
+                      <p>{item.combo ? t.combo : item.name}</p>
                       {item.parts && <p className="note">{item.parts.join(' + ')}</p>}
                       <p className="drawer-price">{brl(item.price)}</p>
                       <div className="stepper">
-                        <button
-                          disabled={busy}
-                          aria-label={fill(t.decrease, { name: item.name })}
-                          onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
-                        >
-                          −
-                        </button>
-                        <span aria-label={fill(t.quantity, { count: item.quantity })}>{item.quantity}</span>
-                        <button disabled={busy} aria-label={fill(t.increase, { name: item.name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
-                          +
-                        </button>
+                        {!item.combo && (
+                          <>
+                            <button
+                              disabled={busy}
+                              aria-label={fill(t.decrease, { name: item.name })}
+                              onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
+                            >
+                              −
+                            </button>
+                            <span aria-label={fill(t.quantity, { count: item.quantity })}>{item.quantity}</span>
+                            <button disabled={busy} aria-label={fill(t.increase, { name: item.name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
+                              +
+                            </button>
+                          </>
+                        )}
                         <button className="text-button" disabled={busy} onClick={() => run((api) => api.remove(item))}>
                           {t.remove}
                         </button>
@@ -252,7 +260,7 @@ export function AddKit({ id, lines, children = 'Adicionar kit ao carrinho' }: { 
   const cart = useCart()
 
   return (
-    <button className="button button-ghost" disabled={cart.busy} onPointerEnter={cart.warm} onClick={() => cart.add(lines, id)}>
+    <button className="button button-ghost" disabled={cart.busy} onPointerEnter={cart.warm} onClick={() => cart.add(lines, { kit: id })}>
       {children}
     </button>
   )

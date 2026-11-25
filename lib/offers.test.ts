@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { kitPrice, quantityTiers, tierOffer, toKits, type Bundle, type Tier } from './offers.ts'
+import { comboOffer, kitPrice, quantityTiers, tierOffer, toKits, type Bundle, type Tier } from './offers.ts'
 
 test('desconto por quantidade: faixas da API e o valor que o carrinho cobra', () => {
   const tiers = quantityTiers({
@@ -67,4 +67,11 @@ test('kits da API: o preço de cada item no kit e avulso; kit inativo ou com ite
       ],
     },
   ])
+})
+
+test('compre junto: o desconto em % ou em reais sobre a soma dos itens', () => {
+  // Scarpin de R$ 459,90 + bolsa de R$ 1.299,90 com 10%: o checkout cobrou R$ 1.583,82 (desconto de R$ 175,98).
+  assert.deepEqual(comboOffer({ discount_type: 'p', discount_value: 10 }, [459.9, 1299.9]), { full: 1759.8, total: 1583.82, saving: 175.98 })
+  assert.deepEqual(comboOffer({ discount_type: 'v', discount_value: 50 }, [100, 80.5]), { full: 180.5, total: 130.5, saving: 50 })
+  assert.deepEqual(comboOffer({ discount_type: 'v', discount_value: 500 }, [100]), { full: 100, total: 0, saving: 100 })
 })

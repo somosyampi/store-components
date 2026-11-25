@@ -19,7 +19,7 @@ test('carrinho: os itens de um kit viram uma linha só', () => {
       id: 1,
       name: 'Kit Couro Marrom',
       images: ['https://images.yampi.me/carteira.png', 'https://images.yampi.me/maleta.png'],
-      price: (220.08 * 2 + 1523.61 * 4) / 2,
+      price: 3267.3,
       quantity: 2,
       parts: ['Carteira em Couro Marrom', '2 × Maleta em Couro Marrom'],
     },
@@ -32,4 +32,19 @@ test('carrinho: os itens de um kit viram uma linha só', () => {
   assert.deepEqual([discounted.discount, discounted.discountLabel, discounted.items[0].images], [160.38, 'Leve duas maletas com +5% OFF', []])
 
   assert.deepEqual(toCart(null), EMPTY)
+})
+
+test('carrinho: os itens de um "compre junto" viram uma linha, com o desconto no total', () => {
+  const cart = toCart({
+    items: [
+      { id: 1092246393, name: 'Scarpin', name_with_grids: 'Scarpin 38', price: '459.90', quantity: 1, bundle_id: null, kit_id: 38617 },
+      { id: 1092246394, name: 'Bolsa de Mão em Couro Creme', price: '1299.90', quantity: 1, bundle_id: null, kit_id: 38617 },
+    ],
+    grouped_items: [],
+    prices: { total: 1583.82, discount: 175.98 },
+    discounts_labels: null,
+  })
+
+  assert.deepEqual(cart.items, [{ id: 1092246393, name: '', images: [], price: 1759.8, quantity: 1, parts: ['Scarpin 38', 'Bolsa de Mão em Couro Creme'], combo: true }])
+  assert.deepEqual([cart.count, cart.total, cart.discount], [2, 1583.82, 175.98])
 })

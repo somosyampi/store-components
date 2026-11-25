@@ -44,6 +44,30 @@ export function tierOffer(tier: Tier, price: number) {
 export const kitPrice = (item: { price_type: string; price: number; discount: number }, skuPrice: number) =>
   item.price_type === 'custom' ? item.price : item.price_type === 'discount' ? cents(skuPrice * (1 - item.discount / 100)) : skuPrice
 
+/** GET …/products/{id}/combos */
+export type Combo = {
+  id: number
+  /** p = `discount_value`% sobre a soma dos itens · v = `discount_value` reais. */
+  discount_type: 'p' | 'v'
+  discount_value: number
+  products: {
+    data: {
+      id: number
+      name: string
+      slug: string
+      images: { data: { url: string }[] }
+      skus: { data: { id: number; blocked_sale: boolean; prices: { data: { price: number } }; images: { data: { url: string }[] }; variations?: { value: string }[] }[] }
+    }[]
+  }
+}
+
+export function comboOffer({ discount_type, discount_value }: Pick<Combo, 'discount_type' | 'discount_value'>, prices: number[]) {
+  const full = cents(prices.reduce((sum, price) => sum + price, 0))
+  const total = cents(Math.max(0, discount_type === 'p' ? full * (1 - discount_value / 100) : full - discount_value))
+
+  return { full, total, saving: cents(full - total) }
+}
+
 /** GET …/products/{id}/bundles */
 export type Bundle = {
   id: number
