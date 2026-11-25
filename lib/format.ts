@@ -23,11 +23,9 @@ export const plain = (html: string) =>
     .trim()
 
 /**
- * Prepara o HTML cadastrado pelo lojista (descrição, páginas) para a página. Ele vem de um
- * editor visual, que espaça o texto com quebras de linha e blocos vazios: isso sai, e o
- * ritmo vertical fica por conta do CSS (`.prose`). Os títulos são rebaixados para `level`,
- * mantendo a hierarquia de headings válida. Fora isso o HTML é exibido como está, com a
- * mesma confiança que a vitrine oficial dá a ele.
+ * Prepara o HTML do lojista (descrição, páginas). O editor visual espaça o texto com quebras e
+ * blocos vazios: isso sai, e o ritmo vertical fica com o CSS (`.prose`). Os títulos são
+ * rebaixados para `level`. Fora isso o HTML é exibido como está, como na vitrine oficial.
  */
 export const prose = (html: string, level: 2 | 3) => {
   // As expressões ficam aqui dentro, e não no topo do arquivo, para não irem junto com `brl`

@@ -46,10 +46,7 @@ async function get<T>({ endpoint, storeId, signal }: Source, path: string, param
   return response.json()
 }
 
-/**
- * GET {endpoint}/v1/search/public/products/suggestions — até 9 termos que completam o que
- * foi digitado. Sem `q`, devolve os termos mais buscados da loja.
- */
+/** GET …/products/suggestions — até 9 termos que completam `q`; sem `q`, os mais buscados da loja. */
 export async function suggest(source: Source, q = ''): Promise<string[]> {
   const { data } = await get<{ data: unknown }>(source, 'products/suggestions', q ? [['q', q]] : [])
 
@@ -57,7 +54,7 @@ export async function suggest(source: Source, q = ''): Promise<string[]> {
 }
 
 /**
- * GET {endpoint}/v1/search/public/products, sem termo — os slugs de todos os produtos ativos.
+ * GET …/products, sem termo — os slugs de todos os produtos ativos.
  * ponytail: para em 50 páginas (5.000 produtos); um catálogo maior pede um índice de sitemaps.
  */
 export async function catalog(source: Source): Promise<string[]> {
@@ -79,7 +76,7 @@ export async function catalog(source: Source): Promise<string[]> {
 
 type Options = Source & ListingState & { q: string; limit?: number }
 
-/** GET {endpoint}/v1/search/public/products — produtos encontrados para um termo, e os filtros possíveis. */
+/** GET …/products — os produtos encontrados para um termo e os filtros possíveis. */
 export async function search({ q, limit = 24, page, sort_by, filters = {}, ...source }: Options) {
   // "Cor:Marrom" + "Cor:Preto" + "Fecho:Zíper" → "Cor:Marrom;Preto|Fecho:Zíper"
   const attributes = Object.entries(Object.groupBy(filters.attributes ?? [], (pair) => pair.split(':')[0]))
@@ -123,8 +120,8 @@ export const usefulGroups = (groups: Facet[]) =>
   groups.filter(({ param, options }) => options.length > (param.startsWith('brand') ? 1 : 0))
 
 /**
- * O preço de um resultado da busca, no formato usado pelos cards. É o preço de cadastro: o
- * serviço de busca não conhece as promoções da loja; o preço final só vem no detalhe do produto.
+ * O preço de um resultado da busca, no formato dos cards. É o de cadastro: o serviço de busca
+ * não conhece as promoções da loja (o preço final só vem no detalhe do produto).
  */
 export const hitPrices = ({ price, discount_price }: Hit): Prices => ({
   price: discount_price || price,

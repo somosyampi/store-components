@@ -1,6 +1,6 @@
-// Os dados estruturados (schema.org) do produto, no formato que o Google pede para páginas em
-// que se compra ("merchant listings"): o preço é sempre um `Offer`, e um produto com variações
-// é um `ProductGroup` com um `Product` por SKU. Sem dependências, para ser testado com `npm test`.
+// Dados estruturados (schema.org) no formato que o Google pede para páginas em que se compra
+// ("merchant listings"): o preço é sempre um `Offer`, e as variações são um `ProductGroup` com
+// um `Product` por SKU.
 
 import type { Image, Prices, Variation } from './types'
 
@@ -33,9 +33,8 @@ type Input = {
 const SCHEMA = 'https://schema.org/'
 
 /**
- * A que propriedade do schema.org corresponde uma variação cadastrada pelo lojista.
- * ponytail: só cor e tamanho são reconhecidos; outra variação (voltagem, sabor) segue no nome
- * da variante, sem propriedade própria. Amplie a lista se a loja variar por material ou estampa.
+ * A propriedade do schema.org que corresponde a uma variação cadastrada pelo lojista.
+ * ponytail: só cor e tamanho; outra variação (voltagem, sabor) segue só no nome da variante.
  */
 const property = (variation: string) => (/^cor(es)?$/i.test(variation.trim()) ? 'color' : /tamanho|numera[cç][aã]o|^tam\.?$/i.test(variation.trim()) ? 'size' : null)
 
@@ -64,8 +63,8 @@ const codes = ({ sku, barcode }: Sku) => ({
 
 /**
  * O produto como os buscadores o leem. Com variações, cada SKU é uma variante com o endereço
- * `?sku={id}`, que abre a página já com ela escolhida (ver `ProductView`): é o que o Google
- * exige para tratar tamanhos e cores como variantes, com preço e estoque próprios.
+ * `?sku={id}`, que abre a página já com ela escolhida (ver `ProductView`): o Google só trata
+ * tamanhos e cores como variantes se cada uma tiver o seu endereço.
  */
 export function productSchema({ id, name, url, images, description, brand, category, variations, skus }: Input) {
   const shared = { ...(category && { category }) }
@@ -119,12 +118,12 @@ type Store = {
   links?: (string | null | undefined)[]
 }
 
-/** Um perfil tem caminho; o endereço só do site da rede (https://x.com/) é campo preenchido pela metade. */
+/** Um perfil tem caminho: o endereço só do site da rede (https://x.com/) é campo pela metade. */
 const isProfile = (link: string) => URL.canParse(link) && new URL(link).pathname.length > 1
 
 /**
- * A loja como os buscadores a leem: vai uma vez, na home. O país é sempre o Brasil, porque é
- * onde a Yampi opera (o CNPJ só vale como `taxID` junto com ele).
+ * A loja como os buscadores a leem; vai uma vez, na home. O país é sempre o Brasil, onde a Yampi
+ * opera (o CNPJ só vale como `taxID` junto com ele).
  */
 export function storeSchema({ name, url, logo, email, legalName, taxId, address, links = [] }: Store) {
   const street = [address?.street, address?.number].filter(Boolean).join(', ')

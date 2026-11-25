@@ -41,19 +41,16 @@ type Props = {
   skus: Sku[]
   /** Faixas de desconto por quantidade ("leve 2 com 5% off"). */
   tiers: Tier[]
-  /** Largura da foto principal em cada largura de tela (atributo `sizes`), conforme o layout do tema. */
+  /** `sizes` da foto principal, conforme o layout do tema. */
   sizes?: string
-  /** Tamanho pedido para as miniaturas, na proporção das fotos do tema. */
+  /** Tamanho das miniaturas, na proporção das fotos do tema. */
   thumb?: { width: number; height: number }
   labels?: Partial<ProductViewLabels>
-  /** Blocos renderizados no servidor (kits, descrição, detalhes) exibidos abaixo do botão de compra. */
+  /** Blocos do servidor (kits, descrição) exibidos abaixo do botão de compra. */
   children?: ReactNode
 }
 
-/**
- * Com a foto ampliada, mostra a região dela que corresponde ao ponto (x, y) da tela: é o que
- * faz a foto acompanhar o ponteiro no desktop e abrir no lugar tocado no celular.
- */
+/** Com a foto ampliada, mostra a região dela que corresponde ao ponto (x, y) da tela. */
 function pan(stage: HTMLElement, x: number, y: number) {
   stage.scrollLeft = (x / stage.clientWidth) * (stage.scrollWidth - stage.clientWidth)
   stage.scrollTop = (y / stage.clientHeight) * (stage.scrollHeight - stage.clientHeight)
@@ -63,9 +60,8 @@ function pan(stage: HTMLElement, x: number, y: number) {
 const has = (sku: Sku, values: number[]) => values.every((value) => sku.combinations.split('-').includes(String(value)))
 
 /**
- * Abre a página com a variação de `?sku={id}` já escolhida: é o endereço de cada variante nos
- * dados estruturados (ver lib/schema.ts). Fica à parte, sob <Suspense>, porque ler a URL dentro
- * da própria ProductView impediria o pré-render dela.
+ * Escolhe a variação de `?sku={id}`, o endereço de cada variante nos dados estruturados (ver
+ * lib/schema.ts). À parte e sob <Suspense>: ler a URL na ProductView impediria o pré-render dela.
  */
 function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Variation[]; onPick(values: number[]): void }) {
   const id = Number(useSearchParams().get('sku'))
@@ -84,36 +80,32 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
 }
 
 /**
- * A compra de um produto: galeria com zoom, preço (com Pix e parcelas), variações, desconto por
- * quantidade e o botão que leva ao carrinho. Precisa estar dentro de <CartProvider>.
+ * A compra de um produto: galeria com zoom, preço, variações, desconto por quantidade e botão de
+ * compra. Precisa de <CartProvider>. Enquanto está na tela, marca o <html> com `data-buy-bar`,
+ * para o CSS do tema abrir espaço a um botão de compra preso ao pé da tela.
  *
- * Enquanto está na tela, marca o <html> com `data-buy-bar`: se o tema prende o botão de compra
- * ao pé da tela, é por esse atributo que o CSS abre espaço para ele no fim da página.
- *
- * Classes: `product`, `gallery`, `gallery-main`, `gallery-thumbs`, `zoom`, `zoom-stage` (com
- * `data-in` quando ampliada), `zoom-photo`, `zoom-controls`, `product-info`, `product-price`,
- * `pix`, `options`, `tiers`, `tiers-title`, `buy`; e as de uso geral `eyebrow`, `note`,
- * `saving`, `tag`, `icon-button`, `button` e `sr-only`.
+ * Classes: product, gallery, gallery-main, gallery-thumbs, zoom, zoom-stage (com data-in quando
+ * ampliada), zoom-photo, zoom-controls, product-info, product-price, pix, options, tiers,
+ * tiers-title, buy. De uso geral: eyebrow, note, saving, tag, icon-button, button, sr-only.
  */
 export function ProductView({ name, brand, images, prices, variations, skus, tiers, sizes = '(min-width: 900px) 50vw, 100vw', thumb = { width: 64, height: 64 }, labels, children }: Props) {
   const t = { ...LABELS, ...labels }
   const cart = useCart()
-  // Valor escolhido em cada variação, na ordem em que a loja as cadastrou (ex.: cor, depois tamanho).
+  // Valor escolhido em cada variação, na ordem do cadastro (ex.: cor, depois tamanho).
   const [picked, setPicked] = useState<number[]>([])
   const [active, setActive] = useState(0)
-  // O que está no campo de quantidade, como texto: assim dá para apagar e digitar outro número.
+  // O campo de quantidade guarda texto: assim dá para apagar e digitar outro número.
   const [typed, setTyped] = useState('1')
   const quantity = Math.min(99, Math.max(1, Math.trunc(Number(typed)) || 1))
-  // Zoom das fotos: fechado, foto inteira na tela ou ampliada.
+  // Zoom: fechado, foto inteira na tela ou ampliada.
   const [zoom, setZoom] = useState<'off' | 'fit' | 'in'>('off')
   const viewer = useRef<HTMLDialogElement>(null)
   const stage = useRef<HTMLDivElement>(null)
   const toChoose = useRef<HTMLFieldSetElement>(null)
 
-  // Ao navegar, o Next mantém esta página no DOM, escondida, para voltar a ela com o estado
-  // intacto. Duas coisas não podem ficar para trás: o zoom aberto (um <dialog> modal
-  // escondido deixa a página seguinte sem responder a cliques) e o aviso de que há um botão
-  // de compra na tela, que o CSS do tema pode usar para dar espaço ao rodapé.
+  // Ao navegar, o Next mantém esta página no DOM, escondida. Não podem ficar para trás o zoom
+  // aberto (um <dialog> modal escondido bloqueia os cliques da página seguinte) nem a marca
+  // `data-buy-bar`.
   useLayoutEffect(() => {
     const dialog = viewer.current
     document.documentElement.dataset.buyBar = ''
@@ -124,7 +116,7 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
     }
   }, [])
 
-  /** Amplia ou reduz a foto, mostrando o ponto (x, y) da tela — o centro, sem um ponto dado. */
+  /** Amplia ou reduz a foto em torno do ponto (x, y) da tela; sem ponto, do centro. */
   function toggleZoom(x?: number, y?: number) {
     setZoom(zoom === 'in' ? 'fit' : 'in')
     // Só depois de a foto mudar de tamanho dá para posicioná-la.
@@ -141,12 +133,11 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
   const price = sku?.prices.data ?? prices
   const photos = sku?.images.data.length ? sku.images.data : images
   const photo = photos[active] ?? photos[0]
-  // A API só informa o parcelamento no preço do produto, não no de cada SKU: ele vale
-  // enquanto o SKU escolhido custar o mesmo.
+  // A API só informa o parcelamento do preço do produto: ele vale enquanto o SKU custar o mesmo.
   // ponytail: SKU com preço próprio fica sem a linha de parcelas; para exibi-la, consulte
   // GET /{alias}/public/catalog/products/{id}/installments?amount={preço}.
   const installments = price.price === prices.price ? prices.installments?.data?.text : undefined
-  // As faixas valem sobre o preço em exibição; só entram as que de fato baixam o total.
+  // Só entram as faixas que de fato baixam o total, sobre o preço em exibição.
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
 
@@ -181,8 +172,7 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
           </ul>
         )}
 
-        {/* Zoom: a foto em tela cheia. Tocar (ou clicar) amplia e mostra o ponto tocado; ampliada,
-            ela rola com o dedo e acompanha o ponteiro do mouse. A imagem só é pedida ao abrir. */}
+        {/* Zoom em tela cheia: tocar amplia no ponto tocado. A imagem só é pedida ao abrir. */}
         <dialog ref={viewer} className="zoom" aria-label={fill(t.photo, { name })} onClose={() => setZoom('off')}>
           {zoom !== 'off' && photo && (
             <div
@@ -290,7 +280,7 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
               max={99}
               value={typed}
               onChange={(event) => setTyped(event.target.value)}
-              // Ao sair do campo, ele mostra a quantidade que de fato vai para o carrinho (de 1 a 99).
+              // Ao sair do campo, ele mostra a quantidade que vai para o carrinho (de 1 a 99).
               onBlur={() => setTyped(String(quantity))}
             />
           </label>
@@ -299,8 +289,7 @@ export function ProductView({ name, brand, images, prices, variations, skus, tie
             disabled={cart.busy || unavailable}
             onClick={() => {
               if (sku) return cart.add([{ skuId: sku.id, quantity }])
-              // Falta escolher uma variação: leva até ela (com o botão preso ao pé da tela, as
-              // opções podem estar fora de vista).
+              // Falta escolher uma variação: leva até ela, que pode estar fora de vista.
               toChoose.current?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
               toChoose.current?.querySelector<HTMLButtonElement>('button:enabled')?.focus({ preventScroll: true })
             }}

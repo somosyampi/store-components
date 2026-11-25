@@ -3,10 +3,7 @@ import Link from 'next/link'
 import type { CardProduct } from '../lib/types'
 import { Price } from './price'
 
-/**
- * Largura da foto do card em cada largura de tela (atributo `sizes`), para uma grade de duas
- * colunas no celular e quatro no desktop. Depende do CSS do tema: informe o da sua grade.
- */
+/** `sizes` da foto para uma grade de duas colunas no celular e quatro no desktop; informe o da grade do tema. */
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
 
 type GridProps = {
@@ -16,7 +13,7 @@ type GridProps = {
   sizes?: string
 }
 
-/** Grade de produtos. Classes: `grid` e as de `ProductCard`. */
+/** Grade de produtos. Classes: grid e as de ProductCard. */
 export function ProductGrid({ products, eager = 0, sizes }: GridProps) {
   return (
     <ul className="grid">
@@ -37,7 +34,7 @@ type CardProps = {
   sizes?: string
 }
 
-/** Um produto na grade: foto, selo de desconto, nome e preço. Classes: `card`, `card-media`, `card-tag`, `card-name`. */
+/** Um produto na grade: foto, selo de desconto, nome e preço. Classes: card, card-media, card-tag, card-name. */
 export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]

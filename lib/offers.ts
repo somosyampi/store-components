@@ -1,7 +1,5 @@
-// As contas das ofertas da página de produto — desconto por quantidade e kits — num lugar só
-// e sem dependências, para poderem ser testadas com `npm test`.
-// Elas repetem o que o checkout da Yampi faz ao montar o carrinho: a página promete o valor que
-// será cobrado.
+// As contas das ofertas do produto: desconto por quantidade e kits. Repetem o que o checkout da
+// Yampi faz ao montar o carrinho, para a página prometer o valor que será cobrado.
 
 const cents = (value: number) => Math.round(value * 100) / 100
 
@@ -24,11 +22,10 @@ export type Discounts = {
 }
 
 /**
- * As faixas "leve N" de um produto, da menor quantidade para a maior. Saem do desconto
+ * As faixas "leve N" de um produto, da menor quantidade para a maior: saem do desconto
  * progressivo legado e do multi-faixa (`buy_x_pay_y`).
- * ponytail: ficam de fora as faixas por valor da compra e o "compre X leve Y"
- * (`buy_x_get_y`), que a mesma rota devolve. O carrinho aplica todos; a página só anuncia os
- * que dependem da quantidade.
+ * ponytail: ficam de fora as faixas por valor da compra e o "compre X leve Y" (`buy_x_get_y`);
+ * o carrinho aplica todos, a página só anuncia os que dependem da quantidade.
  */
 export function quantityTiers({ progressive_discounts = [], buy_x_pay_y = [] }: Discounts): Tier[] {
   const legacy = progressive_discounts

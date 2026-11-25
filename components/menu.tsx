@@ -9,10 +9,7 @@ type Props = {
   children: ReactNode
 }
 
-/**
- * Navegação principal, como popover nativo: o tema decide se ela é uma barra (desktop) ou uma
- * gaveta (celular). Classe: `menu`.
- */
+/** Navegação principal, como popover nativo: o tema decide se é barra (desktop) ou gaveta (celular). Classe: menu. */
 export function Menu({ id = 'menu', label = 'Categorias', children }: Props) {
   return (
     <nav

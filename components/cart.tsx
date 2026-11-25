@@ -1,7 +1,7 @@
 'use client'
 
-// Carrinho. Ele vive no checkout da Yampi: a loja só chama os endpoints de carrinho que o
-// whois entrega (CORS aberto, sem token de API) e, no fim, redireciona para o checkout.
+// O carrinho vive no checkout da Yampi: a loja chama os endpoints que o whois entrega (CORS
+// aberto, sem token de API) e, no fim, redireciona para o checkout.
 
 import { createContext, use, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { preconnect } from 'react-dom'
@@ -11,7 +11,6 @@ import { fill, plural } from '../lib/labels'
 import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
 
-/** O que vai para o carrinho: um SKU e a quantidade. */
 export type Line = { skuId: number; quantity: number }
 
 type CheckoutResponse = { cart?: CheckoutCart | null; error?: boolean; message?: string | { message?: string }[] }
@@ -35,11 +34,10 @@ export type CartLabels = typeof LABELS
 const TOKEN = 'yampi_cart_token'
 
 /**
- * O token identifica o carrinho no checkout. Quem cria é a loja; ele fica no navegador.
- * Com o armazenamento bloqueado (cookies desativados, alguns modos privados), ler ou gravar
- * lança erro: aí o carrinho vale só até a página ser recarregada.
- * ponytail: o token nunca é trocado; se o checkout passar a recusar carrinhos já
- * finalizados, gere um novo quando `add` falhar.
+ * O token identifica o carrinho no checkout e fica no navegador. Com o armazenamento bloqueado
+ * (alguns modos privados), o carrinho vale só até a página ser recarregada.
+ * ponytail: o token nunca é trocado; se o checkout passar a recusar carrinhos já finalizados,
+ * gere um novo quando `add` falhar.
  */
 function cartToken() {
   const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => byte.toString(16).padStart(2, '0')).join('')
@@ -70,7 +68,7 @@ function checkoutCart(checkout: Checkout, failed: string) {
       method,
       headers: { Accept: 'application/json', ...(body && { 'Content-Type': 'application/json' }) },
       body: body && JSON.stringify({ ...body, skipShipment: true, store_token: checkout.store_token, cart_token: token }),
-      // Um checkout que não responde vira erro no carrinho, em vez de deixar o botão de compra travado.
+      // Sem resposta do checkout, o carrinho mostra erro em vez de travar o botão de compra.
       signal: AbortSignal.timeout?.(15_000),
     }).catch(() => null)
     const data: CheckoutResponse | null = (await response?.json().catch(() => null)) ?? null
@@ -90,7 +88,7 @@ function checkoutCart(checkout: Checkout, failed: string) {
       send('POST', url(checkout.items), {
         product_option_id: lines.map((line) => line.skuId),
         quantity: lines.map((line) => line.quantity),
-        // Um kit entra como os SKUs dele mais o id do kit: é o que faz o checkout cobrar o preço do kit.
+        // Com o id do kit junto dos SKUs, o checkout cobra o preço do kit.
         ...(kitId && { bundle_id: kitId }),
         metadata: { source_platform: 'headless' },
       }),
@@ -109,11 +107,11 @@ const CartContext = createContext<{
   /** Põe SKUs no carrinho; com `kitId`, eles entram como um kit. */
   add(lines: Line[], kitId?: number): Promise<void>
   open(): void
-  /** Abre a conexão com o checkout antes do clique em comprar, quando a compra parece próxima. */
+  /** Abre a conexão com o checkout quando a compra parece próxima. */
   warm(): void
 } | null>(null)
 
-/** O carrinho, para qualquer componente do tema: quantidade de itens, adicionar e abrir. */
+/** O carrinho, para qualquer componente do tema. */
 export function useCart() {
   const cart = use(CartContext)
   if (!cart) throw new Error('useCart precisa estar dentro de <CartProvider>')
@@ -128,10 +126,10 @@ type ProviderProps = {
 }
 
 /**
- * Guarda o carrinho e exibe a gaveta dele (um <dialog> nativo). Envolve a loja inteira, no layout.
- * Classes: `drawer`, `drawer-panel`, `drawer-head`, `drawer-empty`, `drawer-items`, `thumbs`,
- * `thumbs-kit`, `drawer-price`, `stepper`, `drawer-foot`, `drawer-discount`, `drawer-total`; e
- * as de uso geral `icon-button`, `text-button`, `button`, `alert`, `note` e `saving`.
+ * Guarda o carrinho e exibe a gaveta dele (um <dialog> nativo). Envolve a loja, no layout.
+ * Classes: drawer, drawer-panel, drawer-head, drawer-empty, drawer-items, thumbs, thumbs-kit,
+ * drawer-price, stepper, drawer-foot, drawer-discount, drawer-total. De uso geral: icon-button,
+ * text-button, button, alert, note, saving.
  */
 export function CartProvider({ checkout, labels, children }: ProviderProps) {
   const t = { ...LABELS, ...labels }
@@ -207,8 +205,7 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
               <ul className="drawer-items">
                 {cart.items.map((item) => (
                   <li key={item.id}>
-                    {/* As miniaturas já vêm redimensionadas pelo checkout, de um host que ele escolhe:
-                        <img> simples. Num kit, duas fotos mostram que a linha leva mais de um produto. */}
+                    {/* Miniaturas já redimensionadas pelo checkout: <img> simples. Num kit, duas fotos. */}
                     <div className={item.images.length > 1 ? 'thumbs thumbs-kit' : 'thumbs'}>
                       {item.images.slice(0, 2).map((src) => (
                         <img key={src} src={src} alt="" width={72} height={72} loading="lazy" />
@@ -263,7 +260,7 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
   )
 }
 
-/** Leva um kit inteiro para o carrinho. O texto do botão é o conteúdo. Classes: `button`, `button-ghost`. */
+/** Leva um kit inteiro para o carrinho; o texto do botão é o conteúdo. Classes: button, button-ghost. */
 export function AddKit({ id, lines, children = 'Adicionar kit ao carrinho' }: { id: number; lines: Line[]; children?: ReactNode }) {
   const cart = useCart()
 
@@ -277,7 +274,7 @@ export function AddKit({ id, lines, children = 'Adicionar kit ao carrinho' }: { 
 const BUTTON_LABELS = { open_one: 'Abrir carrinho, {count} item', open_other: 'Abrir carrinho, {count} itens' }
 export type CartButtonLabels = typeof BUTTON_LABELS
 
-/** Botão que abre o carrinho, com a quantidade de itens. Classes: `cart-button`, `cart-count`. */
+/** Botão que abre o carrinho, com a quantidade de itens. Classes: cart-button, cart-count. */
 export function CartButton({ labels }: { labels?: Partial<CartButtonLabels> }) {
   const t = { ...BUTTON_LABELS, ...labels }
   const { count, open } = useCart()

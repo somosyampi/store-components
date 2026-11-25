@@ -23,9 +23,9 @@ type Props = {
 }
 
 /**
- * Mantém o campo de busca em dia com a rota: na página de resultados ele mostra o termo
- * buscado; em qualquer outra, fica vazio. É um componente à parte, sob <Suspense>, porque
- * ler a URL direto no campo (que costuma morar no layout) impediria o pré-render do cabeçalho.
+ * Mantém o campo em dia com a rota: na página de resultados mostra o termo buscado; nas outras,
+ * fica vazio. À parte e sob <Suspense>: ler a URL no próprio campo impediria o pré-render do
+ * cabeçalho.
  */
 function TermFromRoute({ onChange }: { onChange(term: string): void }) {
   const pathname = usePathname()
@@ -39,10 +39,9 @@ function TermFromRoute({ onChange }: { onChange(term: string): void }) {
 }
 
 /**
- * Campo de busca com sugestões de termos, como na vitrine da Yampi: ao focar, os termos
- * mais buscados da loja; ao digitar, termos que completam o texto. Escolher uma sugestão
- * leva à página de resultados (/busca). Sem JavaScript, o formulário funciona do mesmo jeito.
- * Classes: `search`, `suggestions`; e as de uso geral `icon-button` e `eyebrow`.
+ * Campo de busca com sugestões: ao focar, os termos mais buscados da loja; ao digitar, os que
+ * completam o texto. Escolher uma sugestão leva à página de resultados (/busca).
+ * Classes: search, suggestions. De uso geral: icon-button, eyebrow.
  */
 export function SearchBox({ endpoint, storeId, labels }: Props) {
   const t = { ...LABELS, ...labels }

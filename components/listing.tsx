@@ -48,10 +48,10 @@ type Props = {
 }
 
 /**
- * Vitrine de produtos com filtros, ordenação e paginação: categoria, coleção, promoção ou busca.
- * Ordenar, filtrar e paginar são links, e funcionam sem JavaScript.
- * Classes: `page`, `listing-head`, `sorts`, `filters-open`, `listing-body`, `empty`,
- * `pagination`, `prose`, `listing-about` e `note`; mais as de `Crumbs`, `Filters` e `ProductGrid`.
+ * Vitrine de produtos com filtros, ordenação e paginação (todos links): categoria, coleção,
+ * promoção ou busca.
+ * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
+ * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
 export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, eager = 4, sizes, labels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
@@ -118,7 +118,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
   )
 }
 
-/** Mostrado enquanto a vitrine carrega. Classes: `page`, `listing-head`, `skeleton`, `skeleton-title`, `grid`, `card`, `card-media`. */
+/** Mostrado enquanto a vitrine carrega. Classes: page, listing-head, skeleton, skeleton-title, grid, card, card-media. */
 export function ListingSkeleton() {
   return (
     <div className="page" aria-busy="true">

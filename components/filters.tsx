@@ -28,11 +28,10 @@ type Props = {
 }
 
 /**
- * Filtros da vitrine. Cada opção é um link para a mesma página com o filtro ligado ou
- * desligado, então tudo funciona sem JavaScript. O painel é um popover nativo: o tema decide
- * se ele é uma gaveta (celular) ou uma coluna sempre visível (desktop).
- * Classes: `filters`, `filters-head`, `filters-selected`, `filters-clear`, `filter`, `swatch`,
- * `check`, `filters-done`; e as de uso geral `icon-button`, `button` e `note`.
+ * Filtros da vitrine: cada opção é um link para a mesma página com o filtro ligado ou desligado.
+ * O painel é um popover nativo; o tema decide se é gaveta (celular) ou coluna (desktop).
+ * Classes: filters, filters-head, filters-selected, filters-clear, filter, swatch, check,
+ * filters-done. De uso geral: icon-button, button, note.
  */
 export function Filters({ facets, state, base, extra, total, labels }: Props) {
   if (!facets.length) return null

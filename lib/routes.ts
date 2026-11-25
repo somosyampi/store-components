@@ -1,5 +1,4 @@
-// O esquema de URLs da loja, num lugar só (e sem dependências, para poder ser testado
-// com `npm test`).
+// O esquema de URLs da loja, num lugar só.
 
 /** Ordenações da vitrine (`sort_by`). Sem ordenação, valem os destaques definidos pela loja. */
 export const SORTS = { newest: 'Novidades', lowest_price: 'Menor preço', highest_price: 'Maior preço' } as const
@@ -9,8 +8,8 @@ export type Sort = keyof typeof SORTS
 export const CONTEXTS = { categoria: 'category', colecao: 'collection', promocao: 'promotion' } as const
 
 /**
- * Filtros aceitos na query string, com os mesmos nomes que a Yampi usa. Categoria, coleção e
- * promoção filtram por id; a busca por termo, por nome (`attributes` leva pares "Atributo:Valor").
+ * Filtros aceitos na query string, com os nomes que a Yampi usa. Categoria, coleção e promoção
+ * filtram por id; a busca, por nome (`attributes` leva pares "Atributo:Valor").
  */
 export const ID_FILTERS = ['category_id', 'brand_id', 'filter_id'] as const
 export const NAME_FILTERS = ['categories_name', 'brand_name', 'attributes'] as const
@@ -36,9 +35,8 @@ type Params = Record<string, string | string[] | undefined>
 const MAX_PAGE = 1000
 
 /**
- * ?sort_by=newest&page=2&filter_id=12 → estado da vitrine. Só entram os filtros de `keys`
- * (os da vitrine em questão) e o que tem a forma esperada: o resto cai no padrão em vez de
- * seguir para a API e de criar entradas de cache à toa.
+ * ?sort_by=newest&page=2&filter_id=12 → estado da vitrine. Só entram os filtros de `keys` e o
+ * que tem a forma esperada: o resto cai no padrão, em vez de seguir para a API.
  */
 export function listingState(params: Params, keys: readonly FilterKey[] = ID_FILTERS): ListingState {
   const sort = String(params.sort_by)
@@ -78,8 +76,8 @@ export function toggleFilter(state: ListingState, key: FilterKey, value: string)
 }
 
 /**
- * Converte um link da vitrine hospedada pela Yampi (é o que vem nos banners e nas seções
- * da home) na rota equivalente desta loja. Links para outros sites voltam como estão.
+ * Converte um link da vitrine hospedada pela Yampi (o que vem nos banners e seções da home) na
+ * rota desta loja. Links para outros sites voltam como estão.
  */
 export function toRoute(link: string, storeUrl: string) {
   const url = new URL(link, storeUrl)

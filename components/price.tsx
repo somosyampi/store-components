@@ -1,10 +1,7 @@
 import { brl } from '../lib/format'
 import type { Prices } from '../lib/types'
 
-/**
- * Preço de venda; em promoção, precedido do preço cheio riscado.
- * Classes: `price` e `sr-only` (texto só para leitores de tela).
- */
+/** Preço de venda; em promoção, precedido do preço cheio riscado. Classes: price, sr-only. */
 export function Price({ prices }: { prices: Prices }) {
   const onSale = prices.has_promotion && prices.price_sale > prices.price
 

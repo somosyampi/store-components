@@ -1,5 +1,4 @@
-// O carrinho como a loja o mostra, a partir da resposta do checkout da Yampi. Sem
-// dependências, para poder ser testado com `npm test`; as chamadas ficam em components/cart.tsx.
+// O carrinho como a loja o mostra, a partir da resposta do checkout da Yampi.
 
 /** Uma linha do carrinho: um SKU ou um kit inteiro. */
 export type CartItem = {
