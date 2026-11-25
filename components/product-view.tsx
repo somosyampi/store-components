@@ -7,6 +7,7 @@ import { cleanAnswer, toCustomization } from '../lib/cart'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
+import { canPick, pickedOf, skuFor, skuPrices, soldOut } from '../lib/sku'
 import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
@@ -80,8 +81,6 @@ function pan(stage: HTMLElement, x: number, y: number) {
   stage.scrollTop = (y / stage.clientHeight) * (stage.scrollHeight - stage.clientHeight)
 }
 
-const has = (sku: Sku, values: number[]) => values.every((value) => sku.combinations.split('-').includes(String(value)))
-
 // À parte e sob <Suspense>: ler a URL na ProductView impediria o pré-render dela.
 function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Variation[]; onPick(values: number[]): void }) {
   const id = Number(useSearchParams().get('sku'))
@@ -92,8 +91,8 @@ function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Var
     if (!id || applied.current === id) return
     applied.current = id
 
-    const values = skus.find((sku) => sku.id === id)?.combinations.split('-')
-    if (values) onPick(variations.flatMap((variation) => variation.values.data.find((value) => values.includes(String(value.id)))?.id ?? []))
+    const asked = skus.find((sku) => sku.id === id)
+    if (asked) onPick(pickedOf(asked, variations))
   }, [id, skus, variations, onPick])
 
   return null
@@ -159,12 +158,10 @@ export function ProductView({
     })
   }
 
-  const sku = picked.length === variations.length ? skus.find((candidate) => has(candidate, picked)) : undefined
+  const sku = skuFor(skus, variations, picked)
   const pending = variations[picked.length]
-  const unavailable = skus.every((candidate) => candidate.blocked_sale) || (!pending && (!sku || sku.blocked_sale))
-  // Com todos os SKUs no mesmo preço vale o do produto, que o tema lê do checkout (lib/prices.ts).
-  const ownPrices = skus.some((candidate) => candidate.prices.data.price !== skus[0].prices.data.price)
-  const price = sku && ownPrices ? sku.prices.data : prices
+  const unavailable = soldOut(skus, variations, picked)
+  const price = skuPrices(sku, skus, prices)
   const photos = sku?.images.data.length ? sku.images.data : images
   const photo = photos[active] ?? photos[0]
   // Antes da escolha, a ficha mostra o primeiro SKU: ela não muda de altura ao escolher a variação.
@@ -345,7 +342,7 @@ export function ProductView({
             <legend>{variation.name}</legend>
             {variation.values.data.map((value) => {
               const choice = [...picked.slice(0, index), value.id]
-              const available = skus.some((candidate) => !candidate.blocked_sale && has(candidate, choice))
+              const available = canPick(skus, choice)
 
               return (
                 <button
