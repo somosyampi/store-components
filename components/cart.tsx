@@ -1,8 +1,5 @@
 'use client'
 
-// O carrinho vive no checkout da Yampi: a loja chama os endpoints que o whois entrega (CORS
-// aberto, sem token de API) e, no fim, redireciona para o checkout.
-
 import { createContext, use, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { preconnect } from 'react-dom'
 import { EMPTY, toCart, type Cart, type CartItem, type CheckoutCart } from '../lib/cart'
@@ -11,7 +8,9 @@ import { fill, plural } from '../lib/labels'
 import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
 
-export type Line = { skuId: number; quantity: number }
+export type Line = { skuId: number; quantity: number; customization?: Record<string, string> }
+/** Os SKUs entram como um kit (`products/{id}/bundles`) ou como um "compre junto" (`products/{id}/combos`). */
+export type Group = { kit?: number; combo?: number }
 
 type CheckoutResponse = { cart?: CheckoutCart | null; error?: boolean; message?: string | { message?: string }[] }
 
@@ -24,6 +23,7 @@ const LABELS = {
   quantity: 'Quantidade: {count}',
   increase: 'Aumentar quantidade de {name}',
   remove: 'Remover',
+  combo: 'Compre junto',
   discount: 'Desconto',
   subtotal: 'Subtotal',
   note: 'Frete e cupons são calculados no checkout.',
@@ -33,12 +33,8 @@ export type CartLabels = typeof LABELS
 
 const TOKEN = 'yampi_cart_token'
 
-/**
- * O token identifica o carrinho no checkout e fica no navegador. Com o armazenamento bloqueado
- * (alguns modos privados), o carrinho vale só até a página ser recarregada.
- * ponytail: o token nunca é trocado; se o checkout passar a recusar carrinhos já finalizados,
- * gere um novo quando `add` falhar.
- */
+// Com o armazenamento bloqueado (alguns modos privados), o carrinho dura até a página recarregar.
+// ponytail: o token nunca é trocado; se o checkout recusar carrinhos já finalizados, gere outro quando `add` falhar.
 function cartToken() {
   const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => byte.toString(16).padStart(2, '0')).join('')
   try {
@@ -82,14 +78,15 @@ function checkoutCart(checkout: Checkout, failed: string) {
   }
 
   return {
-    // Visitante novo ainda não tem carrinho no checkout: não há o que buscar.
     load: async () => (stored ? send('GET', url(checkout.items_json)) : EMPTY),
-    add: (lines: Line[], kitId?: number) =>
+    add: (lines: Line[], group: Group = {}) =>
       send('POST', url(checkout.items), {
         product_option_id: lines.map((line) => line.skuId),
         quantity: lines.map((line) => line.quantity),
-        // Com o id do kit junto dos SKUs, o checkout cobra o preço do kit.
-        ...(kitId && { bundle_id: kitId }),
+        ...(lines.some((line) => line.customization) && { customization: Object.fromEntries(lines.flatMap((line) => (line.customization ? [[line.skuId, line.customization]] : []))) }),
+        // Com `bundle_id` o checkout cobra o preço do kit; com `kit_id`, dá o desconto do "compre junto".
+        ...(group.kit && { bundle_id: group.kit }),
+        ...(group.combo && { kit_id: group.combo }),
         metadata: { source_platform: 'headless' },
       }),
     update: (item: CartItem, quantity: number) =>
@@ -104,14 +101,11 @@ type Api = ReturnType<typeof checkoutCart>
 const CartContext = createContext<{
   count: number
   busy: boolean
-  /** Põe SKUs no carrinho; com `kitId`, eles entram como um kit. */
-  add(lines: Line[], kitId?: number): Promise<void>
+  add(lines: Line[], group?: Group): Promise<void>
   open(): void
-  /** Abre a conexão com o checkout quando a compra parece próxima. */
   warm(): void
 } | null>(null)
 
-/** O carrinho, para qualquer componente do tema. */
 export function useCart() {
   const cart = use(CartContext)
   if (!cart) throw new Error('useCart precisa estar dentro de <CartProvider>')
@@ -119,14 +113,12 @@ export function useCart() {
 }
 
 type ProviderProps = {
-  /** Endpoints do carrinho no checkout da loja (`checkout`, no whois). */
   checkout: Checkout
   labels?: Partial<CartLabels>
   children: ReactNode
 }
 
 /**
- * Guarda o carrinho e exibe a gaveta dele (um <dialog> nativo). Envolve a loja, no layout.
  * Classes: drawer, drawer-panel, drawer-head, drawer-empty, drawer-items, thumbs, thumbs-kit,
  * drawer-price, stepper, drawer-foot, drawer-discount, drawer-total. De uso geral: icon-button,
  * text-button, button, alert, note, saving.
@@ -169,8 +161,8 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
         busy,
         open,
         warm: () => preconnect(new URL(checkout.items).origin),
-        add: async (lines, kitId) => {
-          await run((api) => api.add(lines, kitId))
+        add: async (lines, group) => {
+          await run((api) => api.add(lines, group))
           open()
         },
       }}
@@ -205,28 +197,32 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
               <ul className="drawer-items">
                 {cart.items.map((item) => (
                   <li key={item.id}>
-                    {/* Miniaturas já redimensionadas pelo checkout: <img> simples. Num kit, duas fotos. */}
+                    {/* <img> simples: o checkout já entrega as miniaturas no tamanho. */}
                     <div className={item.images.length > 1 ? 'thumbs thumbs-kit' : 'thumbs'}>
                       {item.images.slice(0, 2).map((src) => (
                         <img key={src} src={src} alt="" width={72} height={72} loading="lazy" />
                       ))}
                     </div>
                     <div>
-                      <p>{item.name}</p>
+                      <p>{item.combo ? t.combo : item.name}</p>
                       {item.parts && <p className="note">{item.parts.join(' + ')}</p>}
                       <p className="drawer-price">{brl(item.price)}</p>
                       <div className="stepper">
-                        <button
-                          disabled={busy}
-                          aria-label={fill(t.decrease, { name: item.name })}
-                          onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
-                        >
-                          −
-                        </button>
-                        <span aria-label={fill(t.quantity, { count: item.quantity })}>{item.quantity}</span>
-                        <button disabled={busy} aria-label={fill(t.increase, { name: item.name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
-                          +
-                        </button>
+                        {!item.combo && (
+                          <>
+                            <button
+                              disabled={busy}
+                              aria-label={fill(t.decrease, { name: item.name })}
+                              onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
+                            >
+                              −
+                            </button>
+                            <span aria-label={fill(t.quantity, { count: item.quantity })}>{item.quantity}</span>
+                            <button disabled={busy} aria-label={fill(t.increase, { name: item.name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
+                              +
+                            </button>
+                          </>
+                        )}
                         <button className="text-button" disabled={busy} onClick={() => run((api) => api.remove(item))}>
                           {t.remove}
                         </button>
@@ -260,12 +256,12 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
   )
 }
 
-/** Leva um kit inteiro para o carrinho; o texto do botão é o conteúdo. Classes: button, button-ghost. */
+/** Classes: button, button-ghost. */
 export function AddKit({ id, lines, children = 'Adicionar kit ao carrinho' }: { id: number; lines: Line[]; children?: ReactNode }) {
   const cart = useCart()
 
   return (
-    <button className="button button-ghost" disabled={cart.busy} onPointerEnter={cart.warm} onClick={() => cart.add(lines, id)}>
+    <button className="button button-ghost" disabled={cart.busy} onPointerEnter={cart.warm} onClick={() => cart.add(lines, { kit: id })}>
       {children}
     </button>
   )
@@ -274,7 +270,7 @@ export function AddKit({ id, lines, children = 'Adicionar kit ao carrinho' }: { 
 const BUTTON_LABELS = { open_one: 'Abrir carrinho, {count} item', open_other: 'Abrir carrinho, {count} itens' }
 export type CartButtonLabels = typeof BUTTON_LABELS
 
-/** Botão que abre o carrinho, com a quantidade de itens. Classes: cart-button, cart-count. */
+/** Classes: cart-button, cart-count. */
 export function CartButton({ labels }: { labels?: Partial<CartButtonLabels> }) {
   const t = { ...BUTTON_LABELS, ...labels }
   const { count, open } = useCart()

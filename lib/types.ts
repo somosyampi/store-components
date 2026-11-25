@@ -1,34 +1,80 @@
-// Os dados que os componentes recebem, no formato em que a API pública da Yampi os entrega.
-// Cada tipo traz só o que algum componente lê: o cliente de API do tema pode devolver mais.
-
 export type Prices = {
   price: number
   price_sale: number
   has_promotion: boolean
   percent_discount: number
-  /** A API devolve `data: []` quando o produto não tem parcelamento. */
+  /** Só o da API de preços do checkout considera as promoções da loja (lib/prices.ts). */
   installments?: { data?: { text?: string } }
   pix?: { price: number; discount_percent: number }
 }
 
 export type Image = { url: string }
 
+export type Category = { id: number; name: string; slug: string; category_cover?: string | null; children?: { data: Category[] } }
+
+export type Flag = { id: number; name: string; text_color?: string | null; background_color?: string | null }
+
+/** `amount` é o total e `base_value` o preço sem juros. */
+export type Installment = { installment: number; text: string; amount: string | number; base_value: string | number; amount_formated: string }
+
+export type Customization = {
+  id: number
+  name: string
+  price: number | string
+  description?: string | null
+  type: 'input' | 'select'
+  required: boolean
+  /** 0 quando não há limite. */
+  max_chars: number
+  allowed_values: 'letters' | 'numbers' | 'all'
+  values: string[]
+}
+
 export type Sku = {
   id: number
-  /** Código do SKU e código de barras (EAN/GTIN): só os dados estruturados os usam. */
   sku?: string | null
   barcode?: string | null
+  days_availability_formated?: string | null
+  total_in_stock?: number | null
   blocked_sale: boolean
-  /** IDs dos valores de variação que formam o SKU, separados por hífen. */
+  /** Ids dos valores de variação, separados por hífen. */
   combinations: string
   prices: { data: Prices }
   images: { data: Image[] }
+  customizations?: { data: Customization[] }
+  allow_sell_without_customization?: boolean
 }
 
 export type Variation = { id: number; name: string; values: { data: { id: number; value: string }[] } }
 
-/** O que um card de produto mostra. */
-export type CardProduct = { id: number; name: string; slug: string; images: { data: Image[] }; prices: { data: Prices } }
+export type CardProduct = {
+  id: number
+  name: string
+  slug: string
+  images: { data: Image[] }
+  prices: { data: Prices }
+  flags?: { data: Flag[] }
+  rating?: number | null
+  total_approved_reviews?: number
+  /** O SKU do produto sem variações: é o que a compra rápida põe no carrinho. */
+  sku_id?: number
+  has_variations?: boolean
+  blocked_sale?: boolean
+}
 
-/** URLs do carrinho no checkout da Yampi, entregues pelo whois da loja. */
+type When = { date: string }
+
+export type Review = { rating: number; name: string; message: string; created_at: When; photos?: { data: Image[] } }
+
+/** GET …/products/reviews/ratings */
+export type Ratings = { average_rating: string | number | null; total: number; grouped_rating: Record<string, number> }
+
 export type Checkout = { items: string; items_json: string; redirect_to: string; store_token: string }
+
+export type Question = {
+  name: string
+  message: string
+  created_at: When
+  /** `message_with_links` é HTML: a resposta da loja com os endereços já em links. */
+  answer?: { name: string; message: string; message_with_links?: string | null; created_at: When } | null
+}

@@ -1,14 +1,18 @@
 export const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-// O editor da Yampi grava acentos e sinais como entidades (&ccedil;, &atilde;, &ndash;). As
-// letras acentuadas seguem um padrão — letra + marca — e as demais ficam numa lista curta.
+/** '2025-03-11 14:02:11.000000' → '11/03/2025' */
+export const day = (date: string) => date.slice(0, 10).split('-').reverse().join('/')
+
+// O endereço vem como o lojista colou: página do vídeo, link curto, shorts ou o de incorporar.
+export const youtubeId = (url: string) => url.match(/(?:youtube(?:-nocookie)?\.com\/(?:v\/|embed\/|shorts\/|watch\?(?:.*&)?v=)|youtu\.be\/)([\w-]{6,})/)?.[1] ?? null
+
+// O editor da Yampi grava acentos e sinais como entidades (&ccedil;, &ndash;).
 const MARKS: Record<string, string> = { acute: '\u0301', grave: '\u0300', circ: '\u0302', tilde: '\u0303', uml: '\u0308', cedil: '\u0327' }
 const NAMED: Record<string, string> = {
   nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", ndash: '–', mdash: '—', hellip: '…', bull: '•',
   lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', laquo: '«', raquo: '»', ordm: 'º', ordf: 'ª', deg: '°', sup2: '²',
 }
 
-/** Texto puro a partir de um HTML curto (títulos de seção e descrições de SEO chegam com tags e entidades). */
 export const plain = (html: string) =>
   html
     .replace(/<[^>]+>/g, ' ')
@@ -22,23 +26,16 @@ export const plain = (html: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-/**
- * Prepara o HTML do lojista (descrição, páginas). O editor visual espaça o texto com quebras e
- * blocos vazios: isso sai, e o ritmo vertical fica com o CSS (`.prose`). Os títulos são
- * rebaixados para `level`. Fora isso o HTML é exibido como está, como na vitrine oficial.
- */
+// Sai só o espaçamento do editor visual: o resto do HTML do lojista segue como veio, como na vitrine oficial.
 export const prose = (html: string, level: 2 | 3) => {
-  // As expressões ficam aqui dentro, e não no topo do arquivo, para não irem junto com `brl`
-  // para o JavaScript do navegador (só o servidor chama esta função).
+  // Aqui dentro, e não no topo do arquivo, para não irem ao navegador junto com `brl`.
   const SPACE = String.raw`(?:\s|&nbsp;)*`
   const BREAKS = String.raw`(?:<br\s*\/?>${SPACE})+`
   const BLOCK = String.raw`<\/?(?:blockquote|div|h[1-6]|hr|li|ol|p|table|tbody|thead|tr|td|th|ul)\b[^>]*>`
-  /** Tag que só embrulha espaços e quebras de linha. */
   const HOLLOW = new RegExp(String.raw`<(span|strong|em|b|i|u|font|p|div)\b[^>]*>((?:\s|&nbsp;|<br\s*\/?>)*)<\/\1>`, 'gi')
 
   let clean = html
-  // De dentro para fora: um <span> vazio some e deixa a quebra; parágrafos e divs vazios
-  // (os "espaçadores") somem inteiros.
+  // De dentro para fora, até não sobrar tag vazia.
   for (let before = ''; before !== clean; ) {
     before = clean
     clean = clean.replace(HOLLOW, (_, tag: string, inner: string) => (/^(p|div)$/i.test(tag) ? '' : inner))

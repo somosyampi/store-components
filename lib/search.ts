@@ -1,11 +1,4 @@
-// Serviço de busca da Yampi (search.yampi.com.br), usado do mesmo jeito que a vitrine
-// oficial usa. É aberto e tem CORS liberado, então serve ao servidor e ao navegador.
-//
-//   /products/suggestions  termos sugeridos enquanto se digita; não registra nada
-//   /products              resultado da busca; registra o termo entre os "mais buscados"
-//
-// Por isso as sugestões nunca chamam /products: cada tecla viraria um termo buscado. Sem
-// termo, /products lista o catálogo inteiro (e não registra nada): é o que alimenta o sitemap.
+// /products com termo registra o termo entre os "mais buscados" da loja: as sugestões nunca a chamam.
 
 import type { Facet, ListingState, Sort } from './routes'
 import type { Prices } from './types'
@@ -15,15 +8,14 @@ export type Hit = {
   name: string
   slug: string
   image_url: string | null
-  /** Preço cheio. */
+  /** O preço cheio; na API principal, `price` é o final. */
   price: number
-  /** Preço promocional; 0 quando o produto não está em promoção. */
+  /** 0 quando o produto não está em promoção. */
   discount_price: number
 }
 
 type Bucket = { key: string; doc_count: number }
 
-/** Agregações do resultado: é delas que saem os filtros da busca. */
 type Aggs = {
   brands?: { buckets: Bucket[] }
   categories?: Bucket[]
@@ -33,7 +25,15 @@ type Aggs = {
 /** Corte de relevância que a vitrine da Yampi envia nas duas rotas. */
 const MIN_SCORE = '9'
 
-const ORDER: Record<Sort, string> = { newest: 'external_created_at', lowest_price: 'price:asc', highest_price: 'price:desc' }
+// O serviço de busca não ordena por nome.
+const ORDER: Partial<Record<Sort, string>> = {
+  best_sellers: 'total_orders',
+  newest: 'external_created_at',
+  rating: 'rating',
+  lowest_price: 'price:asc',
+  highest_price: 'price:desc',
+}
+export const SEARCH_SORTS = Object.keys(ORDER) as Sort[]
 
 type Source = { endpoint: string; storeId: number; signal?: AbortSignal }
 
@@ -46,17 +46,15 @@ async function get<T>({ endpoint, storeId, signal }: Source, path: string, param
   return response.json()
 }
 
-/** GET …/products/suggestions — até 9 termos que completam `q`; sem `q`, os mais buscados da loja. */
+// Sem `q`, devolve os termos mais buscados da loja.
 export async function suggest(source: Source, q = ''): Promise<string[]> {
   const { data } = await get<{ data: unknown }>(source, 'products/suggestions', q ? [['q', q]] : [])
 
   return Array.isArray(data) ? data.filter((term) => typeof term === 'string').slice(0, 9) : []
 }
 
-/**
- * GET …/products, sem termo — os slugs de todos os produtos ativos.
- * ponytail: para em 50 páginas (5.000 produtos); um catálogo maior pede um índice de sitemaps.
- */
+// Sem termo, /products não registra nada.
+// ponytail: para em 50 páginas (5.000 produtos); um catálogo maior pede um índice de sitemaps.
 export async function catalog(source: Source): Promise<string[]> {
   const slugs: string[] = []
   for (let page = 1, last = 1; page <= last && page <= 50; page++) {
@@ -76,7 +74,6 @@ export async function catalog(source: Source): Promise<string[]> {
 
 type Options = Source & ListingState & { q: string; limit?: number }
 
-/** GET …/products — os produtos encontrados para um termo e os filtros possíveis. */
 export async function search({ q, limit = 24, page, sort_by, filters = {}, ...source }: Options) {
   // "Cor:Marrom" + "Cor:Preto" + "Fecho:Zíper" → "Cor:Marrom;Preto|Fecho:Zíper"
   const attributes = Object.entries(Object.groupBy(filters.attributes ?? [], (pair) => pair.split(':')[0]))
@@ -91,7 +88,7 @@ export async function search({ q, limit = 24, page, sort_by, filters = {}, ...so
     ['include', 'id,name,slug,image_url,price,discount_price'],
     ['limit', String(limit)],
     ['page', String(page)],
-    ...(sort_by ? [['sort', ORDER[sort_by]] as [string, string]] : []),
+    ...(sort_by && ORDER[sort_by] ? [['sort', ORDER[sort_by]] as [string, string]] : []),
     ...(filters.categories_name ?? []).map((name): [string, string] => ['categories_name[]', name]),
     ...(filters.brand_name ?? []).map((name): [string, string] => ['brand_name[]', name]),
     ...(attributes ? [['attributes', attributes] as [string, string]] : []),
@@ -115,14 +112,11 @@ function facets({ categories = [], brands, attributes = [] }: Aggs): Facet[] {
   ])
 }
 
-/** Tira os grupos vazios e o de marca quando a loja só tem uma (não haveria o que filtrar). */
+// Marca única não é filtro: não haveria o que escolher.
 export const usefulGroups = (groups: Facet[]) =>
   groups.filter(({ param, options }) => options.length > (param.startsWith('brand') ? 1 : 0))
 
-/**
- * O preço de um resultado da busca, no formato dos cards. É o de cadastro: o serviço de busca
- * não conhece as promoções da loja (o preço final só vem no detalhe do produto).
- */
+// É o preço de cadastro: o serviço de busca não conhece as promoções da loja.
 export const hitPrices = ({ price, discount_price }: Hit): Prices => ({
   price: discount_price || price,
   price_sale: price,

@@ -10,14 +10,12 @@ test('vitrine: a query string vira estado e o estado volta a ser URL', () => {
     filters: { brand_id: ['7'], filter_id: ['12', '13'] },
   })
 
-  // Valores inválidos e parâmetros desconhecidos caem no padrão em vez de seguir para a API.
   assert.deepEqual(listingState({ sort_by: 'toString', page: '-3', min: '100', outro: 'x' }), { sort_by: undefined, page: 1, filters: {} })
   assert.deepEqual(listingState({ page: '999999999999999999999', filter_id: ['12', 'x', '-7', '1 or 1'], attributes: 'Cor:Marrom' }), {
     sort_by: undefined,
     page: 1000,
     filters: { filter_id: ['12', '-7'] },
   })
-  // A busca filtra por nome: os filtros por id das outras vitrines não valem nela.
   assert.deepEqual(listingState({ attributes: ['Cor:Marrom', ''], brand_id: '7' }, NAME_FILTERS).filters, { attributes: ['Cor:Marrom'] })
 
   assert.equal(listingHref('/categoria/bolsas', { page: 1 }), '/categoria/bolsas')
@@ -27,7 +25,6 @@ test('vitrine: a query string vira estado e o estado volta a ser URL', () => {
     '/busca?q=bolsa+de+m%C3%A3o&attributes=Cor%3AMarrom&attributes=Fecho%3AZ%C3%ADper&page=3',
   )
 
-  // A URL gerada é lida de volta para o mesmo estado.
   const state: ListingState = { sort_by: 'lowest_price', page: 2, filters: { category_id: ['3', '4'], filter_id: ['12'] } }
   const query = new URL(listingHref('/colecao/verao', state), 'https://loja.test').searchParams
   assert.deepEqual(
@@ -53,6 +50,9 @@ test('links da vitrine Yampi viram rotas desta loja', () => {
   assert.equal(toRoute('/sapatos/masculino?sort_by=best_sellers', store), '/categoria/sapatos/masculino')
   assert.equal(toRoute('/atendimento/contato', store), '/atendimento/contato')
   assert.equal(toRoute('/busca?q=bolsa', store), '/busca?q=bolsa')
+  assert.equal(toRoute('/mocassim-em-couro-preto/p?sku=12&utm_source=email', store), '/produto/mocassim-em-couro-preto?sku=12&utm_source=email')
+  assert.equal(toRoute('/elegancia-em-cada-passo/l?utm_campaign=inverno#topo', store), '/colecao/elegancia-em-cada-passo?utm_campaign=inverno#topo')
+  assert.equal(toRoute(`${store}/?utm_source=email#ofertas`, store), '/?utm_source=email#ofertas')
   assert.equal(toRoute(store, store), '/')
   assert.equal(toRoute('https://www.instagram.com/loja', store), 'https://www.instagram.com/loja')
 })

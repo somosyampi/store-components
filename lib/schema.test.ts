@@ -41,11 +41,27 @@ test('produto sem variação: um Product com um Offer, o preço cheio riscado e 
     },
   })
 
-  // Código com espaço e código de barras que não é um GTIN ficam de fora; esgotado, a oferta diz isso.
   const odd = json(productSchema({ ...base, variations: [], skus: [sku(2, '', 90, { sku: 'A B', barcode: '123', blocked_sale: true })] }))
   assert.equal('sku' in odd || 'gtin' in odd, false)
   assert.equal(odd.offers.availability, OutOfStock)
   assert.equal('priceSpecification' in odd.offers, false)
+})
+
+test('avaliações: a nota média e as avaliações da página; sem avaliação, nada', () => {
+  const review = { rating: 5, name: 'Vitor', message: 'Excelente qualidade.', created_at: { date: '2025-03-11 14:02:11.000000' } }
+  const rated = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], ratings: { average_rating: '4.6667', total: 3 }, reviews: [review] }))
+
+  assert.deepEqual(rated.aggregateRating, { '@type': 'AggregateRating', ratingValue: 4.7, reviewCount: 3 })
+  assert.deepEqual(rated.review, [
+    { '@type': 'Review', author: { '@type': 'Person', name: 'Vitor' }, datePublished: '2025-03-11', reviewRating: { '@type': 'Rating', ratingValue: 5 }, reviewBody: 'Excelente qualidade.' },
+  ])
+
+  const unrated = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], ratings: { average_rating: null, total: 0 } }))
+  assert.equal('aggregateRating' in unrated, false)
+
+  const unsummarized = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 100)], reviews: [review] }))
+  assert.equal('aggregateRating' in unsummarized, false)
+  assert.equal(unsummarized.review.length, 1)
 })
 
 test('produto com variações: um ProductGroup com uma variante por SKU, cada uma com o seu endereço', () => {
@@ -63,14 +79,12 @@ test('produto com variações: um ProductGroup com uma variante por SKU, cada um
     group.hasVariant.map((variant: Record<string, any>) => [variant.name, variant.sku, variant.color, variant.size, variant.offers.price, variant.offers.availability, variant.offers.url, variant.image[0]]),
     [
       ['Mocassim Preto 39', 'COD100', 'Preto', '39', 379.9, OutOfStock, `${url}?sku=100`, 'https://img/1.png'],
-      // As combinações vêm em qualquer ordem; os valores saem na ordem das variações.
       ['Mocassim Preto 40', 'COD101', 'Preto', '40', 459.9, InStock, `${url}?sku=101`, 'https://img/1.png'],
       ['Mocassim Marrom 39', 'COD102', 'Marrom', '39', 459.9, InStock, `${url}?sku=102`, 'https://img/marrom.png'],
     ],
   )
   assert.equal('offers' in group, false)
 
-  // Variação que o schema.org não conhece: segue no nome, sem propriedade nem `variesBy`.
   const volts = [{ id: 3, name: 'Voltagem', values: { data: [{ id: 30, value: '110V' }, { id: 31, value: '220V' }] } }]
   const other = json(productSchema({ ...base, variations: volts, skus: [sku(200, '30', 50), sku(201, '31', 50)] }))
   assert.equal('variesBy' in other, false)
@@ -100,6 +114,5 @@ test('loja: OnlineStore com o que o lojista cadastrou, sem campos pela metade', 
     address: { '@type': 'PostalAddress', streetAddress: 'Rua das Flores, 70 - Sala 2', addressLocality: 'Ibitinga', addressRegion: 'SP', postalCode: '14940-564', addressCountry: 'BR' },
     sameAs: ['https://www.instagram.com/eleganzio'],
   })
-  // Sem rua ou cidade não há endereço; razão social igual ao nome não se repete.
   assert.deepEqual(storeSchema({ name: 'Loja', url: 'https://loja.com.br', legalName: 'Loja', address: { street: 'Rua A' } }), { '@type': 'OnlineStore', name: 'Loja', url: 'https://loja.com.br' })
 })

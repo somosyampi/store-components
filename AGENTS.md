@@ -42,30 +42,60 @@ acessibilidade. Por isso:
 7. **Rotas fixas.** O pacote gera links para `/produto/{slug}`, `/busca`, `/categoria/…`,
    `/colecao/…` e `/promocao/…`, e o tema precisa ter essas rotas. O esquema de URLs das
    vitrines (filtros, ordenação e página na query string) está em `lib/routes.ts`.
+8. **HTML só o do lojista.** O que entra por `dangerouslySetInnerHTML` é o que ele escreve no
+   painel (descrições, textos das seções, resposta a uma dúvida) e sai como na vitrine
+   oficial, sem filtro. O que o visitante escreve (avaliação, dúvida) é sempre texto.
 
 ## Lógica (`lib/`)
 
-- Sem dependências. Contas e transformações (`offers`, `routes`, `cart`, `format`, `labels`,
-  `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado por `node --test`).
+- Sem dependências. Contas e transformações (`offers`, `prices`, `home`, `routes`, `cart`,
+  `format`, `labels`, `schema`) são funções puras, com o teste ao lado (`*.test.ts`, rodado
+  por `node --test`). Um módulo de `lib/` que importa outro em tempo de execução escreve a
+  extensão (`./format.ts`): o `node --test` não tem um empacotador para resolvê-la.
 - As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
   são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
   dela.
-- `search.ts` é o único módulo que chama a rede: o serviço de busca da Yampi. A rota
+- Só dois módulos chamam a rede. `search.ts` usa o serviço de busca da Yampi: a rota
   `/products` com termo registra o termo entre os "mais buscados" da loja, em produção. Por
   isso as sugestões usam `/products/suggestions`, e um teste só busca termos que a loja já
-  tem (na loja modelo, "bolsa").
+  tem (na loja modelo, "bolsa"). `prices.ts` usa a API de preços do checkout, a fonte do
+  preço e das parcelas de um produto: a parcela que a API principal devolve no detalhe do
+  produto não considera as promoções da loja.
 - Os dados estruturados de `schema.ts` seguem a documentação do Google para lojas: página de
   compra usa `Offer`, e variações são um `ProductGroup` com um endereço por variante.
 
-## Código e comentários
+## Código
 
 - Identificadores em inglês; comentários e textos em português.
-- Comente o porquê que não é óbvio (um comportamento da API, do navegador ou do React), não
-  o que o nome já diz. O docblock de um componente é curto e termina nas classes dele.
-- Atalho deliberado leva `ponytail:`, com o limite dele e o caminho para ampliar.
 - O mínimo que resolve: sem abstração para um uso só e sem prop que nenhum tema pediu.
 - Antes de usar uma API do Next, leia a documentação da versão instalada, em
   `node_modules/next/dist/docs/`: ela mudou em relação às versões anteriores.
+
+## Comentários
+
+O padrão é não comentar. Nome, tipo e código dizem o que é feito; um comentário só entra para
+dizer o que eles não conseguem, e são três os casos:
+
+1. **O porquê de algo que parece estranho ou errado a quem lê:** um comportamento da API da
+   Yampi, do navegador, do React ou do Next, ou uma decisão que alguém desfaria sem saber o
+   motivo (`// mousedown (e não click) para agir antes de o campo perder o foco.`).
+2. **`ponytail:`** num atalho deliberado, com o limite dele e o caminho para ampliar.
+3. **A linha `Classes:`** de cada componente exportado, com as variáveis CSS e os atributos
+   `data-*` que ele emite. É o docblock inteiro do componente.
+
+Cada comentário cabe em uma linha; só a lista de classes pode ocupar mais. Não escreva:
+
+- docblock que descreve o componente, a função ou o tipo, ou que repete o nome e a assinatura;
+- descrição de prop, campo, parâmetro ou retorno. A exceção é o que o tipo não mostra e muda
+  o uso: uma unidade (`/** Em meses. */`) ou um formato que a API devolve;
+- cabeçalho de arquivo contando o que o módulo faz;
+- comentário que narra o código (`// busca os produtos`) ou a história de uma mudança;
+- comentário em teste dizendo o que ele verifica: isso é o nome do teste;
+- explicação longa. Ela vai para a mensagem de commit e a descrição do pull request; o que
+  vale para o repositório inteiro, para este arquivo.
+
+Na dúvida, não comente. Antes de abrir um pull request, releia cada comentário do diff com
+esse filtro; ao mexer num arquivo, apague os comentários dele que não passam.
 
 ## Antes de publicar
 

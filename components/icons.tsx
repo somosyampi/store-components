@@ -1,5 +1,4 @@
-// Ícones dos componentes: traço simples, na cor do texto. Tamanho e espessura são do tema,
-// pela classe `icon` — por exemplo `.icon { width: 22px; height: 22px; stroke-width: 1.3 }`.
+// Classe: icon. Tamanho e espessura do traço ficam com o tema.
 
 const svg = {
   className: 'icon',
@@ -26,13 +25,18 @@ export const BagIcon = () => (
   </svg>
 )
 
+export const MenuIcon = () => (
+  <svg {...svg}>
+    <path d="M4 8h16M4 16h16" />
+  </svg>
+)
+
 export const CloseIcon = () => (
   <svg {...svg}>
     <path d="m6 6 12 12M18 6 6 18" />
   </svg>
 )
 
-/** A marca do Pix em contorno, numa área de 24×24. */
 export const PixIcon = () => (
   <svg {...svg} strokeLinejoin="round">
     <path d="M12 3 21 12l-9 9-9-9zM7.9 7.1l4.1 4.1 4.1-4.1M7.9 16.9l4.1-4.1 4.1 4.1" />

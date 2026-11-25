@@ -16,17 +16,12 @@ const LABELS = {
 export type SearchLabels = typeof LABELS
 
 type Props = {
-  /** Endereço do serviço de busca da Yampi (ex.: https://search.yampi.com.br) e o id da loja nele. */
   endpoint: string
   storeId: number
   labels?: Partial<SearchLabels>
 }
 
-/**
- * Mantém o campo em dia com a rota: na página de resultados mostra o termo buscado; nas outras,
- * fica vazio. À parte e sob <Suspense>: ler a URL no próprio campo impediria o pré-render do
- * cabeçalho.
- */
+// À parte e sob <Suspense>: ler a URL no próprio campo impediria o pré-render do cabeçalho.
 function TermFromRoute({ onChange }: { onChange(term: string): void }) {
   const pathname = usePathname()
   const q = useSearchParams().get('q') ?? ''
@@ -38,11 +33,7 @@ function TermFromRoute({ onChange }: { onChange(term: string): void }) {
   return null
 }
 
-/**
- * Campo de busca com sugestões: ao focar, os termos mais buscados da loja; ao digitar, os que
- * completam o texto. Escolher uma sugestão leva à página de resultados (/busca).
- * Classes: search, suggestions. De uso geral: icon-button, eyebrow.
- */
+/** Classes: search, suggestions. De uso geral: icon-button, eyebrow. */
 export function SearchBox({ endpoint, storeId, labels }: Props) {
   const t = { ...LABELS, ...labels }
   const router = useRouter()
@@ -57,7 +48,6 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
   const terms = !open ? [] : typing ? completions : (top ?? [])
 
   useEffect(() => {
-    // Só enquanto se digita com a lista aberta (escolher uma sugestão muda o texto e a fecha).
     if (!typing || !open) return
 
     const request = new AbortController()
@@ -79,7 +69,6 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
 
   function onFocus() {
     setOpen(true)
-    // Os mais buscados são pedidos uma única vez, só quando o campo é usado.
     if (top === null) {
       setTop([])
       suggest({ endpoint, storeId }).then(setTop, () => {})
@@ -94,15 +83,13 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Escape') {
-      // Escape fecha a lista e, com ela já fechada, limpa o campo. Sem o preventDefault, o
-      // navegador apagaria o texto de uma vez e a lista reabriria com os mais buscados.
+      // Sem o preventDefault, o navegador apagaria o campo de uma vez e a lista reabriria.
       event.preventDefault()
       if (!terms.length) setQ('')
       setOpen(false)
       return
     }
     if (!terms.length) {
-      // Seta para baixo reabre a lista fechada com Escape.
       if (event.key === 'ArrowDown') onFocus()
       return
     }
@@ -115,7 +102,6 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
       event.preventDefault()
       setActive(active > 0 ? active - 1 : terms.length - 1)
     }
-    // Enter numa sugestão busca por ela; fora da lista, o formulário é enviado normalmente.
     if (event.key === 'Enter' && active >= 0) {
       event.preventDefault()
       go(terms[active])
@@ -166,7 +152,6 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
             </li>
           )}
           {terms.map((suggestion, index) => {
-            // Destaca o que a sugestão acrescenta ao texto digitado.
             const completes = typing && suggestion.toLowerCase().startsWith(term.toLowerCase())
 
             return (
@@ -178,7 +163,6 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
                 // mousedown (e não click) para agir antes de o campo perder o foco.
                 onMouseDown={(event) => {
                   event.preventDefault()
-                  // Só o botão principal escolhe; o direito abre o menu do navegador.
                   if (event.button === 0) go(suggestion)
                 }}
                 onMouseEnter={() => setActive(index)}

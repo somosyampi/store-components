@@ -8,14 +8,14 @@ export type CrumbsLabels = typeof CRUMBS_LABELS
 
 type Props = {
   trail: Crumb[]
-  /** Nome da página atual: fecha a trilha que vai para os buscadores (na tela, é o título da página). */
+  /** Só vai para os buscadores: na tela, a página atual é o título. */
   current?: string
-  /** Endereço público da loja: base dos links que vão para os buscadores. Sem ele, a trilha fica só na tela. */
+  /** Sem ele, a trilha não vai para os buscadores. */
   siteUrl?: string
   labels?: Partial<CrumbsLabels>
 }
 
-/** Trilha de navegação; a mesma vai para os buscadores, como dados estruturados. Classe: crumbs. */
+/** Classe: crumbs. */
 export function Crumbs({ trail, current, siteUrl, labels }: Props) {
   const t = { ...CRUMBS_LABELS, ...labels }
   const steps = [{ name: t.home, href: '/' }, ...trail].map((step) => ({ name: step.name, item: siteUrl + step.href }))

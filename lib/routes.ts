@@ -1,16 +1,17 @@
-// O esquema de URLs da loja, num lugar só.
-
-/** Ordenações da vitrine (`sort_by`). Sem ordenação, valem os destaques definidos pela loja. */
-export const SORTS = { newest: 'Novidades', lowest_price: 'Menor preço', highest_price: 'Maior preço' } as const
+export const SORTS = {
+  best_sellers: 'Mais vendidos',
+  newest: 'Novidades',
+  rating: 'Melhor avaliação',
+  lowest_price: 'Menor preço',
+  highest_price: 'Maior preço',
+  name_asc: 'A–Z',
+  name_desc: 'Z–A',
+} as const
 export type Sort = keyof typeof SORTS
 
-/** Prefixo da URL → `context` da listagem pública: /categoria/…, /colecao/…, /promocao/… */
 export const CONTEXTS = { categoria: 'category', colecao: 'collection', promocao: 'promotion' } as const
 
-/**
- * Filtros aceitos na query string, com os nomes que a Yampi usa. Categoria, coleção e promoção
- * filtram por id; a busca, por nome (`attributes` leva pares "Atributo:Valor").
- */
+// Categoria, coleção e promoção filtram por id; a busca, por nome (`attributes` leva pares "Atributo:Valor").
 export const ID_FILTERS = ['category_id', 'brand_id', 'filter_id'] as const
 export const NAME_FILTERS = ['categories_name', 'brand_name', 'attributes'] as const
 export const FILTERS = [...ID_FILTERS, ...NAME_FILTERS] as const
@@ -22,7 +23,6 @@ export type ListingState = {
   filters?: Partial<Record<FilterKey, string[]>>
 }
 
-/** Um grupo de opções de filtro (marca, cor, categoria…) e a chave da query string que ele alimenta. */
 export type Facet = {
   param: FilterKey
   label: string
@@ -31,13 +31,10 @@ export type Facet = {
 
 type Params = Record<string, string | string[] | undefined>
 
-/** Última página aceita: só para um número absurdo na URL não seguir para a API. */
+// Um número absurdo na URL não segue para a API.
 const MAX_PAGE = 1000
 
-/**
- * ?sort_by=newest&page=2&filter_id=12 → estado da vitrine. Só entram os filtros de `keys` e o
- * que tem a forma esperada: o resto cai no padrão, em vez de seguir para a API.
- */
+// O que não tem a forma esperada cai no padrão, em vez de seguir da URL para a API.
 export function listingState(params: Params, keys: readonly FilterKey[] = ID_FILTERS): ListingState {
   const sort = String(params.sort_by)
   const filters: ListingState['filters'] = {}
@@ -57,7 +54,6 @@ export function listingState(params: Params, keys: readonly FilterKey[] = ID_FIL
   }
 }
 
-/** O inverso de listingState: a URL da mesma vitrine em outro estado. */
 export function listingHref(base: string, { sort_by, page, filters = {} }: ListingState, extra: Record<string, string> = {}) {
   const query = new URLSearchParams(extra)
   for (const key of FILTERS) for (const value of filters[key] ?? []) query.append(key, value)
@@ -67,7 +63,6 @@ export function listingHref(base: string, { sort_by, page, filters = {} }: Listi
   return query.size ? `${base}?${query}` : base
 }
 
-/** Liga ou desliga uma opção de filtro, voltando para a primeira página. */
 export function toggleFilter(state: ListingState, key: FilterKey, value: string): ListingState {
   const current = state.filters?.[key] ?? []
   const next = current.includes(value) ? current.filter((other) => other !== value) : [...current, value]
@@ -75,19 +70,18 @@ export function toggleFilter(state: ListingState, key: FilterKey, value: string)
   return { ...state, page: 1, filters: { ...state.filters, [key]: next } }
 }
 
-/**
- * Converte um link da vitrine hospedada pela Yampi (o que vem nos banners e seções da home) na
- * rota desta loja. Links para outros sites voltam como estão.
- */
+// Os links que o lojista cadastra (banners, seções da home) apontam para a vitrine hospedada pela Yampi.
 export function toRoute(link: string, storeUrl: string) {
   const url = new URL(link, storeUrl)
   if (url.origin !== new URL(storeUrl).origin) return link
 
   const [first, second] = url.pathname.split('/').filter(Boolean)
-  if (!first) return '/'
-  if (second === 'p') return `/produto/${first}`
-  if (second === 'l') return `/colecao/${first}`
-  if (first === 'promocoes' && second) return `/promocao/${second}`
-  if (first === 'atendimento' || first === 'busca') return url.pathname + url.search
-  return `/categoria${url.pathname}`
+  const rest = url.search + url.hash
+  if (!first) return `/${rest}`
+  if (second === 'p') return `/produto/${first}${rest}`
+  if (second === 'l') return `/colecao/${first}${rest}`
+  if (first === 'promocoes' && second) return `/promocao/${second}${rest}`
+  if (first === 'atendimento' || first === 'busca') return url.pathname + rest
+  // Sem a query: a vitrine oficial põe `?sort_by=best_sellers` em todo link de categoria, e a ordenação padrão é a do tema.
+  return `/categoria${url.pathname}${url.hash}`
 }

@@ -6,9 +6,8 @@ import { SORTS, listingHref, type Facet, type ListingState, type Sort } from '..
 import type { CardProduct } from '../lib/types'
 import { CRUMBS_LABELS, Crumbs, type Crumb } from './crumbs'
 import { FILTERS_ID, FILTERS_LABELS, Filters } from './filters'
-import { ProductGrid } from './product-card'
+import { ProductGrid, type CardLabels } from './product-card'
 
-/** Os textos da vitrine, com os da trilha e os dos filtros, que ela exibe. */
 export const LISTING_LABELS = {
   ...CRUMBS_LABELS,
   ...FILTERS_LABELS,
@@ -30,33 +29,31 @@ type Props = {
   total: number
   pages: number
   state: ListingState
-  /** Caminho da vitrine e parâmetros fixos dela (o termo, na busca). */
   base: string
   extra?: Record<string, string>
   facets: Facet[]
   trail?: Crumb[]
-  /** Endereço público da loja, para a trilha de navegação enviada aos buscadores (ver `Crumbs`). */
   siteUrl?: string
-  /** Texto de apresentação cadastrado pelo lojista (HTML), exibido depois dos produtos. */
   description?: string | null
-  /** Quantos cards ficam acima da dobra, e o `sizes` das fotos na grade do tema (ver `ProductGrid`). */
+  /** As ordenações oferecidas, na ordem dos links; a busca só aceita as de `SEARCH_SORTS`. */
+  sorts?: Sort[]
+  quickBuy?: boolean
   eager?: number
   sizes?: string
   labels?: Partial<ListingLabels>
-  /** Navegação exibida acima da vitrine (ex.: subcategorias). */
+  /** À parte de `labels`: os dois têm `count_one` e `count_other`, com sentidos diferentes. */
+  cardLabels?: Partial<CardLabels>
   children?: ReactNode
 }
 
 /**
- * Vitrine de produtos com filtros, ordenação e paginação (todos links): categoria, coleção,
- * promoção ou busca.
  * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
  * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
-export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, eager = 4, sizes, labels, children, products, total, pages }: Props) {
+export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], quickBuy, eager = 4, sizes, labels, cardLabels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
   const href = (next: ListingState) => listingHref(base, next, extra)
-  const sorts: [Sort | undefined, string][] = [[undefined, t.featured], ...(Object.entries(SORTS) as [Sort, string][])]
+  const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, SORTS[sort]])]
   const filtering = Object.values(state.filters ?? {}).flat().length
 
   return (
@@ -76,7 +73,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
             {filtering > 0 && ` (${filtering})`}
           </button>
         )}
-        {sorts.map(([sort, label]) => (
+        {options.map(([sort, label]) => (
           <Link key={label} href={href({ ...state, sort_by: sort, page: 1 })} aria-current={sort === state.sort_by ? 'true' : undefined}>
             {label}
           </Link>
@@ -87,7 +84,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
         <Filters facets={facets} state={state} base={base} extra={extra} total={total} labels={t} />
 
         <div>
-          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} /> : <p className="empty">{t.empty}</p>}
+          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} quickBuy={quickBuy} labels={cardLabels} /> : <p className="empty">{t.empty}</p>}
 
           {pages > 1 && (
             <nav aria-label={t.pagination} className="pagination">
@@ -118,7 +115,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
   )
 }
 
-/** Mostrado enquanto a vitrine carrega. Classes: page, listing-head, skeleton, skeleton-title, grid, card, card-media. */
+/** Classes: page, listing-head, skeleton, skeleton-title, grid, card, card-media. */
 export function ListingSkeleton() {
   return (
     <div className="page" aria-busy="true">
