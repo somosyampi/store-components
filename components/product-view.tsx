@@ -3,10 +3,11 @@
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { cleanAnswer, toCustomization } from '../lib/cart'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
-import type { Customization, Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
+import type { Flag, Image as Photo, Installment, Prices, Ratings, Sku, Variation } from '../lib/types'
 import { useCart } from './cart'
 import { Flags } from './flags'
 import { Groups, type Sibling } from './groups'
@@ -80,8 +81,6 @@ function pan(stage: HTMLElement, x: number, y: number) {
 }
 
 const has = (sku: Sku, values: number[]) => values.every((value) => sku.combinations.split('-').includes(String(value)))
-
-const allowed = (value: string, rule: Customization['allowed_values']) => (rule === 'letters' ? value.replace(/[^\p{L} ]/gu, '') : rule === 'numbers' ? value.replace(/\D/g, '') : value)
 
 // À parte e sob <Suspense>: ler a URL na ProductView impediria o pré-render dela.
 function SkuFromUrl({ skus, variations, onPick }: { skus: Sku[]; variations: Variation[]; onPick(values: number[]): void }) {
@@ -181,8 +180,7 @@ export function ProductView({
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
   const fields = customizations.map((item) => {
     const required = !optional && item.required
-    // Sem espaços no início: um valor só de espaços passaria pelo `required` do navegador e chegaria vazio ao checkout.
-    const change = (value: string) => setCustom({ ...custom, [item.id]: value.trimStart() })
+    const change = (value: string) => setCustom({ ...custom, [item.id]: cleanAnswer(value, item.allowed_values) })
     const hint = [item.description, item.type === 'input' && item.max_chars > 0 && fill(t.customMax, { count: item.max_chars })].filter(Boolean).join(' · ')
 
     return (
@@ -205,7 +203,7 @@ export function ProductView({
             required={required}
             maxLength={item.max_chars || undefined}
             inputMode={item.allowed_values === 'numbers' ? 'numeric' : undefined}
-            onChange={(event) => change(allowed(event.target.value, item.allowed_values))}
+            onChange={(event) => change(event.target.value)}
           />
         )}
         {hint && <span className="note">{hint}</span>}
@@ -427,11 +425,7 @@ export function ProductView({
                   missing.reportValidity()
                   return
                 }
-                const answers = Object.fromEntries(customizations.map((item) => [item.id, (custom[item.id] ?? '').trim()]))
-                const filled = Object.fromEntries(Object.entries(answers).filter(([, value]) => value))
-                // Sem nada preenchido num SKU que exige personalização, vão os campos vazios: quem recusa é o checkout, com a mensagem dele.
-                const customization = !customizations.length ? undefined : Object.keys(filled).length ? filled : optional ? undefined : answers
-                return cart.add([{ skuId: sku.id, quantity, customization }])
+                return cart.add([{ skuId: sku.id, quantity, customization: toCustomization(customizations, custom, optional) }])
               }
               toChoose.current?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
               toChoose.current?.querySelector<HTMLButtonElement>('button:enabled')?.focus({ preventScroll: true })

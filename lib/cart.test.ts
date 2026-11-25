@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { EMPTY, quickBuySku, toCart } from './cart.ts'
+import { EMPTY, cleanAnswer, quickBuySku, toCart, toCustomization } from './cart.ts'
 
 test('carrinho: os itens de um kit viram uma linha só', () => {
   const cart = toCart({
@@ -64,4 +64,22 @@ test('compra rápida: só o produto que diz não ter variações nem venda bloqu
   assert.equal(quickBuySku({ sku_id: 7, has_variations: false, blocked_sale: true }), null)
   assert.equal(quickBuySku({ sku_id: 7 }), null)
   assert.equal(quickBuySku({ has_variations: false, blocked_sale: false }), null)
+})
+
+test('personalização: o campo só guarda o que o cadastro aceita, sem espaços no início', () => {
+  assert.equal(cleanAnswer('  Ana3 Maria! ', 'letters'), 'Ana Maria ')
+  assert.equal(cleanAnswer('São João', 'letters'), 'São João')
+  assert.equal(cleanAnswer('a1 b2', 'numbers'), '12')
+  assert.equal(cleanAnswer('  Nº 7!', 'all'), 'Nº 7!')
+  assert.equal(cleanAnswer('   ', 'all'), '')
+})
+
+test('personalização: vai ao carrinho o que foi preenchido; sem nada, só quando o SKU a exige', () => {
+  const fields = [{ id: 47 }, { id: 48 }]
+
+  assert.deepEqual(toCustomization(fields, { 47: ' Ana ', 48: '' }, true), { 47: 'Ana' })
+  assert.deepEqual(toCustomization(fields, { 47: 'Ana', 48: 'Prata' }, false), { 47: 'Ana', 48: 'Prata' })
+  assert.equal(toCustomization(fields, {}, true), undefined)
+  assert.deepEqual(toCustomization(fields, { 47: '  ' }, false), { 47: '', 48: '' })
+  assert.equal(toCustomization([], {}, false), undefined)
 })
