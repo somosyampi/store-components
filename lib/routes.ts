@@ -76,10 +76,12 @@ export function toRoute(link: string, storeUrl: string) {
   if (url.origin !== new URL(storeUrl).origin) return link
 
   const [first, second] = url.pathname.split('/').filter(Boolean)
-  if (!first) return '/'
-  if (second === 'p') return `/produto/${first}`
-  if (second === 'l') return `/colecao/${first}`
-  if (first === 'promocoes' && second) return `/promocao/${second}`
-  if (first === 'atendimento' || first === 'busca') return url.pathname + url.search
-  return `/categoria${url.pathname}`
+  const rest = url.search + url.hash
+  if (!first) return `/${rest}`
+  if (second === 'p') return `/produto/${first}${rest}`
+  if (second === 'l') return `/colecao/${first}${rest}`
+  if (first === 'promocoes' && second) return `/promocao/${second}${rest}`
+  if (first === 'atendimento' || first === 'busca') return url.pathname + rest
+  // Sem a query: a vitrine oficial põe `?sort_by=best_sellers` em todo link de categoria, e a ordenação padrão é a do tema.
+  return `/categoria${url.pathname}${url.hash}`
 }
