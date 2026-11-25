@@ -6,7 +6,7 @@ import { SORTS, listingHref, type Facet, type ListingState, type Sort } from '..
 import type { CardProduct } from '../lib/types'
 import { CRUMBS_LABELS, Crumbs, type Crumb } from './crumbs'
 import { FILTERS_ID, FILTERS_LABELS, Filters } from './filters'
-import { ProductGrid } from './product-card'
+import { ProductGrid, type CardLabels } from './product-card'
 
 export const LISTING_LABELS = {
   ...CRUMBS_LABELS,
@@ -41,6 +41,8 @@ type Props = {
   eager?: number
   sizes?: string
   labels?: Partial<ListingLabels>
+  /** À parte de `labels`: os dois têm `count_one` e `count_other`, com sentidos diferentes. */
+  cardLabels?: Partial<CardLabels>
   children?: ReactNode
 }
 
@@ -48,7 +50,7 @@ type Props = {
  * Classes: page, listing-head, sorts, filters-open, listing-body, empty, pagination, prose,
  * listing-about, note; mais as de Crumbs, Filters e ProductGrid.
  */
-export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], quickBuy, eager = 4, sizes, labels, children, products, total, pages }: Props) {
+export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], quickBuy, eager = 4, sizes, labels, cardLabels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
   const href = (next: ListingState) => listingHref(base, next, extra)
   const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, SORTS[sort]])]
@@ -82,7 +84,7 @@ export function Listing({ title, state, base, extra, facets, trail = [], siteUrl
         <Filters facets={facets} state={state} base={base} extra={extra} total={total} labels={t} />
 
         <div>
-          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} quickBuy={quickBuy} /> : <p className="empty">{t.empty}</p>}
+          {products.length > 0 ? <ProductGrid products={products} eager={eager} sizes={sizes} quickBuy={quickBuy} labels={cardLabels} /> : <p className="empty">{t.empty}</p>}
 
           {pages > 1 && (
             <nav aria-label={t.pagination} className="pagination">

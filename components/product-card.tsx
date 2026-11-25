@@ -3,10 +3,12 @@ import Link from 'next/link'
 import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
 import { Price } from './price'
-import { QuickBuy } from './quick-buy'
-import { Rating } from './rating'
+import { QuickBuy, type QuickBuyLabels } from './quick-buy'
+import { Rating, type RatingLabels } from './rating'
 
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
+
+export type CardLabels = RatingLabels & QuickBuyLabels
 
 type GridProps = {
   products: CardProduct[]
@@ -14,15 +16,16 @@ type GridProps = {
   /** Quantos cards carregam sem lazy loading: os que ficam acima da dobra. */
   eager?: number
   sizes?: string
+  labels?: Partial<CardLabels>
 }
 
 /** Classes: grid e as de ProductCard. */
-export function ProductGrid({ products, eager = 0, sizes, quickBuy }: GridProps) {
+export function ProductGrid({ products, eager = 0, sizes, quickBuy, labels }: GridProps) {
   return (
     <ul className="grid">
       {products.map((product, index) => (
         // Numa vitrine, o maior elemento da tela (LCP) costuma ser uma das duas primeiras fotos.
-        <ProductCard key={product.id} product={product} eager={index < eager} priority={index < Math.min(eager, 2)} sizes={sizes} quickBuy={quickBuy} />
+        <ProductCard key={product.id} product={product} eager={index < eager} priority={index < Math.min(eager, 2)} sizes={sizes} quickBuy={quickBuy} labels={labels} />
       ))}
     </ul>
   )
@@ -34,10 +37,11 @@ type CardProps = {
   eager?: boolean
   priority?: boolean
   sizes?: string
+  labels?: Partial<CardLabels>
 }
 
 /** Classes: card, card-media, card-tag, card-name e as de Flags, Rating e QuickBuy. */
-export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES, quickBuy = false }: CardProps) {
+export function ProductCard({ product, eager = false, priority = false, sizes = CARD_SIZES, quickBuy = false, labels }: CardProps) {
   const prices = product.prices.data
   const image = product.images.data[0]
 
@@ -54,11 +58,11 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
           <Flags flags={product.flags?.data} />
         </span>
         <span className="card-name">{product.name}</span>
-        {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} /> : null}
+        {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} labels={labels} /> : null}
       </Link>
       <Price prices={prices} />
       {/* ponytail: só o produto sem variações; para escolher uma no card, abra um <dialog> com as opções do produto. */}
-      {quickBuy && product.sku_id && product.has_variations === false && product.blocked_sale === false && <QuickBuy skuId={product.sku_id} name={product.name} />}
+      {quickBuy && product.sku_id && product.has_variations === false && product.blocked_sale === false && <QuickBuy skuId={product.sku_id} name={product.name} labels={labels} />}
     </li>
   )
 }
