@@ -4,8 +4,8 @@ Componentes React sem estilo, e a lógica que eles usam, para lojas construídas
 públicas da Yampi. Os temas (aplicações Next.js, como o `headless-store`) instalam este pacote
 direto do GitHub, por tag, e dão a ele o visual e o vocabulário de cada loja.
 
-O repositório ainda não tem README nem licença: são decisões em aberto. Não crie nenhum dos
-dois sem pedirem.
+A licença é a MIT ([`LICENSE`](LICENSE)). O repositório ainda não tem README, por decisão: não
+crie um sem pedirem.
 
 ## Como o pacote é consumido
 
@@ -78,8 +78,9 @@ acessibilidade. Por isso:
 
 ## Versões, tags e releases
 
-Os temas instalam uma tag, nunca a `main`. Toda mudança em `components/` ou `lib/` que um
-tema possa receber sai como uma versão nova, com tag e release, e não fica na `main` sem elas:
+Os temas instalam uma tag, nunca a `main`. Toda mudança que um tema possa receber (em
+`components/`, em `lib/` ou na licença) sai como uma versão nova, com tag e release, e não
+fica na `main` sem elas:
 
 1. `npm version X.Y.Z --no-git-tag-version` ajusta `package.json` e `package-lock.json`.
 2. Faça o commit, marque-o com a tag `vX.Y.Z` e envie a `main` e a tag.
