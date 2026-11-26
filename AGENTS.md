@@ -147,5 +147,5 @@ um pull request, e o merge fica com quem revisa.
 - Não entra na descrição: introdução, resumo no fim, o que os commits e o diff já mostram, a
   história de como se chegou à solução, e tabela ou número que não muda a decisão de quem
   revisa. Um limite conhecido só entra se quem revisa precisa dele para decidir.
-- Commits em português, um assunto por commit. A primeira linha é curta e no presente
-  ("Põe…", "Enxuga…"); o corpo diz o que mudou e por quê.
+- Commits em inglês, um assunto por commit. A primeira linha é curta e no imperativo
+  ("Add…", "Trim…"); o corpo diz o que mudou e por quê.
