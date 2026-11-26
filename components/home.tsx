@@ -8,6 +8,7 @@ import type { Prices, Review } from '../lib/types'
 import { Price } from './price'
 import { Prose } from './prose'
 import { Rating, type RatingLabels } from './rating'
+import { RichText } from './rich-text'
 
 // Arte sem dimensões no cadastro: vale esta proporção até a imagem carregar.
 const PORTRAIT = { width: 800, height: 1000 }
@@ -108,7 +109,7 @@ export function Story({ block, storeUrl, sizes = { one: '(min-width: 900px) 50vw
             <span key={line}>{line}</span>
           ))}
         </h2>
-        <Prose html={block.text} />
+        {typeof block.text === 'string' ? <Prose html={block.text} /> : <RichText value={block.text} />}
         {block.cta && (
           <Link href={toRoute(block.cta.link, storeUrl)} className="button button-ghost">
             {block.cta.label}
@@ -192,11 +193,11 @@ type PerksProps = {
 export function Perks({ block, icons = {} }: PerksProps) {
   return (
     <ul className="perks" style={{ '--perk-icon': block.colors.icon ?? undefined, '--perk-text': block.colors.text ?? undefined } as CSSProperties}>
-      {block.items.map((item) => {
+      {block.items.map((item, index) => {
         const shape = icons[item.icon]
 
         return (
-          <li key={item.icon + item.text}>
+          <li key={index}>
             {shape && (
               <svg className="perk-icon" viewBox={shape.viewBox} fill="currentColor" aria-hidden="true">
                 {shape.paths.map(({ d, evenodd }) => (
@@ -204,7 +205,13 @@ export function Perks({ block, icons = {} }: PerksProps) {
                 ))}
               </svg>
             )}
-            <span dangerouslySetInnerHTML={{ __html: item.text }} />
+            {typeof item.text === 'string' ? (
+              <span dangerouslySetInnerHTML={{ __html: item.text }} />
+            ) : (
+              <span>
+                <RichText value={item.text} inline />
+              </span>
+            )}
           </li>
         )
       })}
@@ -231,7 +238,7 @@ export function Callout({ block, storeUrl, label = 'Clique para conferir' }: Cal
           ))}
         </h2>
       )}
-      <Prose html={block.text} />
+      {typeof block.text === 'string' ? <Prose html={block.text} /> : <RichText value={block.text} />}
       {block.cta && (
         <Link href={toRoute(block.cta.link, storeUrl)} className="button button-ghost">
           {block.cta.label || label}
