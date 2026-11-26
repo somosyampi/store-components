@@ -1,4 +1,5 @@
 import { plain } from './format.ts'
+import type { RichText } from './rich-text.ts'
 
 type Size = { width: string; height: string }
 
@@ -20,13 +21,13 @@ type Colors<Key extends string> = Record<Key, string | null>
 
 export type Block =
   | { type: 'hero'; banners: Banner[] }
-  | { type: 'story'; title: string[]; text: string; banners: Banner[]; flip: boolean; cta: Cta | null }
+  | { type: 'story'; title: string[]; text: string | RichText; banners: Banner[]; flip: boolean; cta: Cta | null }
   | { type: 'feature'; title: string; text: string; banner: Banner | null; flip: boolean; slugs: string[] }
   | { type: 'shelf'; name: string; slug: string }
   | { type: 'banners'; banners: Banner[]; mosaic: boolean; flip: boolean }
   | { type: 'categories'; title: string; ids: number[]; names: boolean }
-  | { type: 'perks'; items: { icon: string; text: string }[]; colors: Colors<'icon' | 'text'> }
-  | { type: 'callout'; title: string[]; text: string; cta: Cta | null; align: 'left' | 'center' | 'right'; narrow: boolean; colors: Colors<'background' | 'text' | 'button'> }
+  | { type: 'perks'; items: { icon: string; text: string | RichText }[]; colors: Colors<'icon' | 'text'> }
+  | { type: 'callout'; title: string[]; text: string | RichText; cta: Cta | null; align: 'left' | 'center' | 'right'; narrow: boolean; colors: Colors<'background' | 'text' | 'button'> }
   | { type: 'testimonials'; title: string; ids: number[]; visible: number }
   | { type: 'video'; title: string; url: string }
 
