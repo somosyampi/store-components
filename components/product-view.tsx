@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { cleanAnswer, toCustomization } from '../lib/cart'
+import { cleanAnswer, mustFill, toCustomization } from '../lib/cart'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import { cashbackFor, tierOffer, type Cashback, type Tier } from '../lib/offers'
@@ -13,7 +13,7 @@ import { useCart } from './cart'
 import { Flags } from './flags'
 import { Groups, type Sibling } from './groups'
 import { CloseIcon, PixIcon, SearchIcon } from './icons'
-import { Price } from './price'
+import { Price, type PriceLabels } from './price'
 import { Rating, REVIEWS_ID, type RatingLabels } from './rating'
 
 const LABELS = {
@@ -50,7 +50,7 @@ const LABELS = {
   choose: 'Selecione: {name}',
   add: 'Adicionar ao carrinho',
 }
-export type ProductViewLabels = typeof LABELS & RatingLabels
+export type ProductViewLabels = typeof LABELS & RatingLabels & PriceLabels
 
 type Props = {
   name: string
@@ -136,7 +136,6 @@ export function ProductView({
   const stage = useRef<HTMLDivElement>(null)
   const toChoose = useRef<HTMLFieldSetElement>(null)
   const [custom, setCustom] = useState<Record<number, string>>({})
-  const toCustomize = useRef<HTMLFieldSetElement>(null)
 
   // O Next mantém a página no DOM ao navegar: um <dialog> modal aberto nela bloquearia os cliques da seguinte.
   useLayoutEffect(() => {
@@ -176,7 +175,7 @@ export function ProductView({
   const offers = tiers.map((tier) => ({ tier, ...tierOffer(tier, price.price) })).filter((offer) => offer.saving > 0)
   const reached = offers.findLast((offer) => quantity >= offer.tier.quantity)
   const fields = customizations.map((item) => {
-    const required = !optional && item.required
+    const required = mustFill(item, customizations, custom, optional)
     const change = (value: string) => setCustom({ ...custom, [item.id]: cleanAnswer(value, item) })
     const hint = [item.description, item.type === 'input' && item.max_chars > 0 && fill(t.customMax, { count: item.max_chars })].filter(Boolean).join(' · ')
 
@@ -306,7 +305,7 @@ export function ProductView({
         )}
 
         <div className="product-price">
-          <Price prices={price} />
+          <Price prices={price} labels={labels} />
           {installmentText && <p className="note">{fill(t.installments, { text: installmentText })}</p>}
           {samePrice && installments.length > 1 && (
             <details className="installments">
@@ -391,7 +390,7 @@ export function ProductView({
               {fields}
             </details>
           ) : (
-            <fieldset ref={toCustomize} className="customizations">
+            <fieldset className="customizations">
               <legend>{t.customize}</legend>
               {fields}
             </fieldset>
@@ -414,11 +413,12 @@ export function ProductView({
           <button
             className="button"
             disabled={cart.busy || unavailable}
-            onClick={() => {
+            onClick={(event) => {
               if (sku) {
                 // O <fieldset> não valida os campos que contém: quem acusa o que falta é o próprio campo.
-                const missing = toCustomize.current?.querySelector<HTMLInputElement | HTMLSelectElement>(':invalid')
+                const missing = event.currentTarget.closest('.product-info')?.querySelector<HTMLInputElement | HTMLSelectElement>('.customizations :invalid')
                 if (missing) {
+                  missing.closest('details.customizations')?.setAttribute('open', '')
                   missing.reportValidity()
                   return
                 }

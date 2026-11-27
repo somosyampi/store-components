@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { plain, prose, youtubeId } from './format.ts'
+import { cents, plain, prose, youtubeId } from './format.ts'
+
+test('centavos: o meio centavo sobe, como no checkout', () => {
+  assert.deepEqual([cents(2.425), cents(1.005), cents(2.5 * 0.97), cents(544.401), cents(1603.8 * 0.95)], [2.43, 1.01, 2.43, 544.4, 1523.61])
+})
 
 test('HTML do lojista: saem as quebras e os blocos vazios usados como espaçamento', () => {
   const html =

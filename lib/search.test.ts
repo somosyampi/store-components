@@ -49,6 +49,9 @@ test('busca: o resultado vira produtos, total, páginas e filtros; marca única 
     { param: 'categories_name', label: 'Categorias', options: [{ value: 'Bolsas', label: 'Bolsas', count: 3 }] },
     { param: 'attributes', label: 'Cor', options: [{ value: 'Cor:Marrom', label: 'Marrom', count: 2 }] },
   ])
+
+  const named = await search({ ...source, q: 'bolsa', page: 1, labels: { categories: 'Departamentos' } })
+  assert.equal(named.facets[0].label, 'Departamentos')
 })
 
 test('busca: resposta de erro do serviço vira exceção', async (t) => {
@@ -57,11 +60,11 @@ test('busca: resposta de erro do serviço vira exceção', async (t) => {
   await assert.rejects(search({ ...source, q: 'bolsa', page: 1 }), /503/)
 })
 
-test('sugestões: só textos, no máximo nove; sem termo, pede os mais buscados', async (t) => {
-  const urls = answering(t, { data: ['bolsa', 7, 'sapato', ...Array(10).fill('carteira')] }, { data: null })
+test('sugestões: só textos, sem repetidos, no máximo nove; sem termo, pede os mais buscados', async (t) => {
+  const urls = answering(t, { data: ['bolsa', 7, 'bolsa', 'sapato', ...Array.from({ length: 10 }, (_, index) => `carteira ${index}`)] }, { data: null })
   const terms = await suggest(source, 'bol')
 
-  assert.deepEqual([terms.length, terms.slice(0, 3)], [9, ['bolsa', 'sapato', 'carteira']])
+  assert.deepEqual([terms.length, terms.slice(0, 3)], [9, ['bolsa', 'sapato', 'carteira 0']])
   assert.deepEqual(await suggest(source), [])
   assert.deepEqual(urls.map((url) => [url.pathname, url.searchParams.get('q')]), [['/v1/search/public/products/suggestions', 'bol'], ['/v1/search/public/products/suggestions', null]])
 })

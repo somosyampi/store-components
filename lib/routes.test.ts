@@ -56,3 +56,9 @@ test('links da vitrine Yampi viram rotas desta loja', () => {
   assert.equal(toRoute(store, store), '/')
   assert.equal(toRoute('https://www.instagram.com/loja', store), 'https://www.instagram.com/loja')
 })
+
+test('link malformado do lojista segue como veio, sem lançar', () => {
+  for (const link of ['https:// www.loja.com.br/promo', 'http://', 'https://loja.com.br:8o80/x']) {
+    assert.equal(toRoute(link, 'https://loja.catalog.yampi.io'), link)
+  }
+})

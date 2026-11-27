@@ -55,10 +55,14 @@ acessibilidade. Por isso:
 - A decisão que um componente toma mora aqui e tem teste: que SKU as variações escolhidas
   formam, o que vai ao carrinho, quem pode ser comprado direto do card. O componente chama a
   função e desenha o resultado; não há teste de componente.
-- As contas de `offers.ts` repetem as do checkout da Yampi: os valores esperados nos testes
-  são os que o checkout cobrou. `cart.ts` lê a resposta do checkout, e o teste usa o formato
-  dela.
-- Só dois módulos chamam a rede. `search.ts` usa o serviço de busca da Yampi: a rota
+- As contas de `offers.ts` repetem as do checkout da Yampi, inclusive o arredondamento (`cents`,
+  em `format.ts`): os valores esperados nos testes são os que o checkout cobrou. `cart.ts` lê a
+  resposta do checkout, e o teste usa o formato dela.
+- Só três módulos chamam a rede. `cart.ts` fala com o checkout pelo navegador; o teste troca a
+  rede por respostas no formato dele. O token do carrinho é também a sessão do Ana
+  (`yampi_session`, que o script da plataforma grava), como na vitrine oficial: é o que liga a
+  visita à compra. Quem tem o token lê o carrinho e os dados de quem preencheu o checkout, então
+  ele não vai a nenhum outro lugar. `search.ts` usa o serviço de busca da Yampi: a rota
   `/products` com termo registra o termo entre os "mais buscados" da loja, em produção. Por
   isso as sugestões usam `/products/suggestions`, o teste troca a rede por uma resposta de
   mentira e, à mão, só se busca termo que a loja já tem (na loja modelo, "bolsa"). `prices.ts` usa a API de preços do checkout, a fonte do

@@ -33,11 +33,14 @@ test('preço em promoção: a parcela é a do preço final, com Pix e as parcela
   ])
 })
 
-test('fração de centavo no preço e produto sem parcelamento nem Pix', () => {
+test('frações de centavo no preço e no Pix; produto sem parcelamento nem Pix', () => {
   const { prices, installments } = fromCheckout({ price: 544.401, price_sale: 1099.9, has_promotion: true, percent_discount: 50.5, installments_data: [] })
 
   assert.equal(prices.price, 544.4)
   assert.equal(prices.installments?.data?.text, undefined)
   assert.equal(prices.pix, undefined)
   assert.deepEqual(installments, [])
+
+  const pix = fromCheckout({ price: 544.401, price_sale: 1099.9, has_promotion: true, percent_discount: 50.5, payment_methods: { pix: { discount: 3, price: 528.06897 } } })
+  assert.equal(pix.prices.pix?.price, 528.07)
 })

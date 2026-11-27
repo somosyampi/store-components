@@ -3,13 +3,13 @@ import Link from 'next/link'
 import { quickBuySku } from '../lib/cart'
 import type { CardProduct } from '../lib/types'
 import { Flags } from './flags'
-import { Price } from './price'
+import { Price, type PriceLabels } from './price'
 import { QuickBuy, type QuickBuyLabels } from './quick-buy'
 import { Rating, type RatingLabels } from './rating'
 
 export const CARD_SIZES = '(min-width: 700px) 25vw, 50vw'
 
-export type CardLabels = RatingLabels & QuickBuyLabels
+export type CardLabels = RatingLabels & QuickBuyLabels & PriceLabels
 
 type GridProps = {
   products: CardProduct[]
@@ -62,7 +62,7 @@ export function ProductCard({ product, eager = false, priority = false, sizes = 
         <span className="card-name">{product.name}</span>
         {product.total_approved_reviews ? <Rating value={product.rating} count={product.total_approved_reviews} labels={labels} /> : null}
       </Link>
-      <Price prices={prices} />
+      <Price prices={prices} labels={labels} />
       {quick && <QuickBuy skuId={quick} name={product.name} labels={labels} />}
     </li>
   )

@@ -7,7 +7,7 @@ import { CloseIcon, MenuIcon } from './icons'
 import { Menu } from './menu'
 import { SearchBox } from './search'
 
-const LABELS = { openMenu: 'Abrir menu', closeMenu: 'Fechar menu' }
+const LABELS = { openMenu: 'Abrir menu', closeMenu: 'Fechar menu', menu: 'Categorias' }
 export type HeaderLabels = typeof LABELS
 
 type Props = {
@@ -44,7 +44,7 @@ export function Header({ name, logo, logoSizes = '180px', categories, promotions
         <CartButton {...cart} />
       </div>
 
-      <Menu>
+      <Menu label={t.menu}>
         <button className="icon-button menu-close" popoverTarget="menu" popoverTargetAction="hide" aria-label={t.closeMenu}>
           <CloseIcon />
         </button>

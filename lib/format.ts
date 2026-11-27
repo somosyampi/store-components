@@ -1,5 +1,8 @@
 export const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+// Como o checkout arredonda: em binário 2,425 × 100 dá 242,4999…, e 15 dígitos significativos o levam de volta a 242,5.
+export const cents = (value: number) => Math.round(Number((value * 100).toPrecision(15))) / 100
+
 /** '2025-03-11 14:02:11.000000' → '11/03/2025' */
 export const day = (date: string) => date.slice(0, 10).split('-').reverse().join('/')
 

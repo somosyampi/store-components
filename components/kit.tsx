@@ -3,7 +3,7 @@ import { brl } from '../lib/format'
 import { fill } from '../lib/labels'
 import type { Kit } from '../lib/offers'
 import { AddKit } from './cart'
-import { Price } from './price'
+import { Price, type PriceLabels } from './price'
 
 const LABELS = {
   eyebrow: 'Leve o kit',
@@ -12,7 +12,7 @@ const LABELS = {
   saving: 'Economize {value}',
   add: 'Adicionar kit ao carrinho',
 }
-export type KitLabels = typeof LABELS
+export type KitLabels = typeof LABELS & PriceLabels
 
 type Props = { kit: Kit; sizes?: string; labels?: Partial<KitLabels> }
 
@@ -40,7 +40,7 @@ export function KitOffer({ kit, sizes = '72px', labels }: Props) {
                 {item.name}
               </span>
             </span>
-            <Price prices={{ price: item.price, price_sale: item.full, has_promotion: item.price < item.full, percent_discount: 0 }} />
+            <Price prices={{ price: item.price, price_sale: item.full, has_promotion: item.price < item.full, percent_discount: 0 }} labels={labels} />
           </li>
         ))}
       </ul>

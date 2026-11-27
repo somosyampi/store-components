@@ -7,9 +7,9 @@ import { brl } from '../lib/format'
 import { fill } from '../lib/labels'
 import { buyable, comboChoice, type Combo, type Picks } from '../lib/offers'
 import { useCart } from './cart'
-import { Price } from './price'
+import { PRICE_LABELS, Price } from './price'
 
-const LABELS = { title: 'Compre junto e economize', choose: 'Selecionar', total: 'Juntos por', saving: 'Economize {value}', buy: 'Comprar junto', unavailable: 'Indisponível' }
+const LABELS = { ...PRICE_LABELS, title: 'Compre junto e economize', choose: 'Selecionar', total: 'Juntos por', saving: 'Economize {value}', buy: 'Comprar junto', unavailable: 'Indisponível' }
 export type CombosLabels = typeof LABELS
 
 type Props = { combos: Combo[]; sizes?: string; labels?: Partial<CombosLabels> }
@@ -73,7 +73,7 @@ function ComboOffer({ combo, sizes, t }: { combo: Combo; sizes: string; t: Combo
 
       <div className="combo-total">
         <p className="eyebrow">{t.total}</p>
-        <Price prices={{ price: total, price_sale: full, has_promotion: saving > 0, percent_discount: 0 }} />
+        <Price prices={{ price: total, price_sale: full, has_promotion: saving > 0, percent_discount: 0 }} labels={t} />
         {saving > 0 && <p className="note saving">{fill(t.saving, { value: brl(saving) })}</p>}
         <button
           className="button"
