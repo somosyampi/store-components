@@ -5,8 +5,10 @@ import { preconnect } from 'react-dom'
 import { EMPTY, toCart, type Cart, type CartItem, type CheckoutCart } from '../lib/cart'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
+import type { RichText as RichTextValue } from '../lib/rich-text'
 import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
+import { RichText } from './rich-text'
 
 export type Line = { skuId: number; quantity: number; customization?: Record<string, string> }
 /** Os SKUs entram como um kit (`products/{id}/bundles`) ou como um "compre junto" (`products/{id}/combos`). */
@@ -25,6 +27,8 @@ const LABELS = {
   remove: 'Remover',
   combo: 'Compre junto',
   discount: 'Desconto',
+  itemSavings: '{value} mais barato',
+  savings: 'Você economizou',
   subtotal: 'Subtotal',
   note: 'Frete e cupons são calculados no checkout.',
   checkout: 'Finalizar compra',
@@ -115,15 +119,19 @@ export function useCart() {
 type ProviderProps = {
   checkout: Checkout
   labels?: Partial<CartLabels>
+  savings?: { items?: boolean; total?: boolean }
+  empty?: { text?: RichTextValue; action?: { label: string; href: string } }
+  variant?: string
   children: ReactNode
 }
 
 /**
- * Classes: drawer, drawer-panel, drawer-head, drawer-empty, drawer-items, thumbs, thumbs-kit,
- * drawer-price, stepper, drawer-foot, drawer-discount, drawer-total. De uso geral: icon-button,
- * text-button, button, alert, note, saving.
+ * Classes: drawer, drawer-panel, drawer-head, drawer-empty, drawer-empty-action, drawer-items, thumbs,
+ * thumbs-kit, drawer-price, drawer-item-saving, stepper, drawer-foot, drawer-discount, drawer-savings,
+ * drawer-total. De uso geral: icon-button, text-button, button, alert, note, saving, prose. Atributo:
+ * data-variant no drawer, com o valor de `variant`.
  */
-export function CartProvider({ checkout, labels, children }: ProviderProps) {
+export function CartProvider({ checkout, labels, savings, empty, variant, children }: ProviderProps) {
   const t = { ...LABELS, ...labels }
   const title = useId()
   const api = useRef<Api | null>(null)
@@ -172,6 +180,7 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
       <dialog
         ref={dialog}
         className="drawer"
+        data-variant={variant}
         aria-labelledby={title}
         // O clique que chega no próprio <dialog> é o clique no fundo escurecido.
         onClick={(event) => event.target === event.currentTarget && event.currentTarget.close()}
@@ -191,7 +200,15 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
           )}
 
           {cart.items.length === 0 ? (
-            <p className="drawer-empty">{t.empty}</p>
+            <>
+              <p className="drawer-empty">{t.empty}</p>
+              {empty?.text && empty.text.length > 0 && <RichText value={empty.text} />}
+              {empty?.action && (
+                <a className="button drawer-empty-action" href={empty.action.href}>
+                  {empty.action.label}
+                </a>
+              )}
+            </>
           ) : (
             <>
               <ul className="drawer-items">
@@ -207,6 +224,7 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
                       <p>{item.combo ? t.combo : item.name}</p>
                       {item.parts && <p className="note">{item.parts.join(' + ')}</p>}
                       <p className="drawer-price">{brl(item.price)}</p>
+                      {savings?.items && item.listPrice && <p className="drawer-item-saving saving">{fill(t.itemSavings, { value: brl(item.listPrice - item.price) })}</p>}
                       <div className="stepper">
                         {!item.combo && (
                           <>
@@ -237,6 +255,12 @@ export function CartProvider({ checkout, labels, children }: ProviderProps) {
                   <p className="drawer-discount saving">
                     <span>{cart.discountLabel || t.discount}</span>
                     <span>−{brl(cart.discount)}</span>
+                  </p>
+                )}
+                {savings?.total && cart.savings > 0 && (
+                  <p className="drawer-savings saving">
+                    <span>{t.savings}</span>
+                    <span>{brl(cart.savings)}</span>
                   </p>
                 )}
                 <p className="drawer-total">
