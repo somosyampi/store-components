@@ -25,15 +25,16 @@ export type CartItem = {
   name: string
   images: string[]
   price: number
+  listPrice?: number
   quantity: number
   parts?: string[]
   /** Itens de um "compre junto": saem juntos do carrinho e não mudam de quantidade. */
   combo?: boolean
 }
 
-export type Cart = { items: CartItem[]; count: number; total: number; discount: number; discountLabel: string }
+export type Cart = { items: CartItem[]; count: number; total: number; discount: number; discountLabel: string; savings: number }
 
-export const EMPTY: Cart = { items: [], count: 0, total: 0, discount: 0, discountLabel: '' }
+export const EMPTY: Cart = { items: [], count: 0, total: 0, discount: 0, discountLabel: '', savings: 0 }
 
 type Item = {
   id: number
@@ -41,6 +42,7 @@ type Item = {
   name_with_grids?: string
   medium?: string
   price: number | string
+  price_sale?: number | string
   quantity: number | string
   bundle_id?: number | null
   /** O id do "compre junto"; o desconto dele vem no total do carrinho, não no item. */
@@ -52,7 +54,7 @@ export type CheckoutCart = {
   items?: Item[]
   /** Um representante de cada kit; sem kits, a API manda `[]`. */
   grouped_items?: Record<string, { bundle_id?: number | null; bundle?: { name?: string; quantity?: number } | null }> | unknown[]
-  prices?: { total: number | string; discount?: number | string }
+  prices?: { total: number | string; discount?: number | string; items_discount?: number | string; discount_without_wallet?: number | string }
   discounts_labels?: string | null
 }
 
@@ -65,7 +67,19 @@ export function toCart(cart: CheckoutCart | null | undefined): Cart {
   const lines = items.flatMap((item, index): CartItem[] => {
     if (!item.bundle_id && !item.kit_id) {
       const chosen = (item.customizations ?? []).flatMap((custom) => (custom.selected_value ? `${custom.name}: ${custom.selected_value}` : []))
-      return [{ id: item.id, name: name(item), images: [photo(item)].filter(Boolean), price: Number(item.price), quantity: Number(item.quantity), ...(chosen.length > 0 && { parts: chosen }) }]
+      const listPrice = Number(item.price_sale)
+      return [
+        {
+          id: item.id,
+          name: name(item),
+          images: [photo(item)].filter(Boolean),
+          price: Number(item.price),
+          // ponytail: com personalização, o preço soma o acréscimo dela e o price_sale não; o "de/por" do item fica de fora.
+          ...(chosen.length === 0 && listPrice > Number(item.price) && { listPrice }),
+          quantity: Number(item.quantity),
+          ...(chosen.length > 0 && { parts: chosen }),
+        },
+      ]
     }
 
     const parts = items.filter((other) => (item.bundle_id ? other.bundle_id === item.bundle_id : other.kit_id === item.kit_id))
@@ -86,11 +100,16 @@ export function toCart(cart: CheckoutCart | null | undefined): Cart {
     ]
   })
 
+  const amount = (value?: number | string) => Number(value) || 0
+  const prices = cart?.prices
+
   return {
     items: lines,
     count: items.reduce((total, item) => total + Number(item.quantity), 0),
-    total: Number(cart?.prices?.total ?? 0),
-    discount: Number(cart?.prices?.discount ?? 0),
+    total: Number(prices?.total ?? 0),
+    discount: Number(prices?.discount ?? 0),
     discountLabel: cart?.discounts_labels || '',
+    // items_discount soma o "de/por" dos itens e os descontos do carrinho; discount_without_wallet é a parte do carrinho.
+    savings: Math.max(0, Math.round((amount(prices?.items_discount) - amount(prices?.discount_without_wallet) + amount(prices?.discount)) * 100) / 100),
   }
 }

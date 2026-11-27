@@ -34,6 +34,32 @@ test('carrinho: os itens de um kit viram uma linha só', () => {
   assert.deepEqual(toCart(null), EMPTY)
 })
 
+test('carrinho: o "de/por" de cada item e o total economizado, como o checkout devolve', () => {
+  const cart = toCart({
+    items: [
+      { id: 10364077, name: 'Conjunto Prime Office', price: '299.90', price_sale: '299.90', quantity: 1, bundle_id: null, kit_id: null },
+      { id: 10364078, name: 'Maleta de Couro com Fivelas', price: '1242.00', price_sale: '1380.00', quantity: 1, bundle_id: null, kit_id: null },
+    ],
+    grouped_items: [],
+    prices: { total: 1541.9, discount: 0, discount_without_wallet: 0, items_discount: 138 },
+    discounts_labels: '',
+  })
+
+  assert.deepEqual(
+    cart.items.map((item) => item.listPrice),
+    [undefined, 1380],
+  )
+  assert.equal(cart.savings, 138)
+
+  const coupon = toCart({ items: [], grouped_items: [], prices: { total: 290, discount: 10, discount_without_wallet: 10, items_discount: 40 } })
+  assert.equal(coupon.savings, 40)
+
+  const customized = toCart({
+    items: [{ id: 1, name: 'Bolsa', price: '310.00', price_sale: '350.00', quantity: 1, customizations: [{ name: 'Gravação', selected_value: 'L.C.' }] }],
+  })
+  assert.equal(customized.items[0].listPrice, undefined)
+})
+
 test('carrinho: os itens de um "compre junto" viram uma linha, com o desconto no total', () => {
   const cart = toCart({
     items: [
