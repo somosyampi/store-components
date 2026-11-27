@@ -46,12 +46,18 @@ function cartToken() {
   try {
     const stored = localStorage.getItem(TOKEN)
     if (stored) return { token: stored, stored: true }
-
-    const token = localStorage.getItem(SESSION) || fresh()
-    localStorage.setItem(TOKEN, token)
-    return { token, stored: false }
+    return { token: localStorage.getItem(SESSION) || fresh(), stored: false }
   } catch {
     return { token: fresh(), stored: false }
+  }
+}
+
+// O token só fica depois que o carrinho existe: antes, cada página consultaria o checkout por um carrinho que ele não tem.
+function keepToken(token: string) {
+  try {
+    localStorage.setItem(TOKEN, token)
+  } catch {
+    // Sem armazenamento, o carrinho vale até a página recarregar.
   }
 }
 
@@ -94,6 +100,9 @@ function checkoutCart(checkout: Checkout, failed: string) {
         ...(group.kit && { bundle_id: group.kit }),
         ...(group.combo && { kit_id: group.combo }),
         metadata: { source_platform: 'headless' },
+      }).then((cart) => {
+        keepToken(token)
+        return cart
       }),
     update: (item: CartItem, quantity: number) =>
       send('PUT', url(checkout.items, `/${item.id}`), { product_option_id: item.id, oldQuantity: item.quantity, quantity }),
