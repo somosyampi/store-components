@@ -187,9 +187,12 @@ export function checkoutCart(checkout: Checkout, failed: string, storage: () => 
   }
 
   async function change(method: string, target: URL, body: object): Promise<Result> {
+    const at = token
     generation++
     const result = await send(method, target, body)
     generation++
+    // Outra aba trocou de carrinho durante a espera: esta resposta é do antigo, e a releitura já trouxe o novo.
+    if (token !== at) return {}
     // Depois de um erro o carrinho é relido: a adição de várias linhas que falha no meio deixa nele as que passaram.
     return result.error ? { ...(await send('GET', url(checkout.items_json))), error: result.error } : result
   }

@@ -20,10 +20,13 @@ export function Video({ url, title, sizes = '(min-width: 900px) 60vw, 100vw', la
     <details
       className="video"
       // Fechado, o <details> só esconde o iframe, e o vídeo seguiria tocando: o iframe fica em branco até abrir de novo.
+      // Com `lazy`, o navegador adiaria essa troca enquanto o iframe está escondido.
       onToggle={(event) => {
         const frame = event.currentTarget.querySelector('iframe')
         const src = event.currentTarget.open ? embed : 'about:blank'
-        if (frame && frame.src !== src) frame.src = src
+        if (!frame || frame.src === src) return
+        frame.loading = 'eager'
+        frame.src = src
       }}
     >
       <summary aria-label={t.play}>

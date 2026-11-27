@@ -287,3 +287,18 @@ test('checkout: a leitura feita antes ou durante uma mudança não sobrescreve o
   calls[3].reply(200, bag(2))
   assert.equal((await after).cart?.count, 2)
 })
+
+test('checkout: a mudança que termina depois que outra aba trocou de carrinho não traz o carrinho antigo de volta', async (t) => {
+  const storage = memory({ [CART_TOKEN]: 'antigo' })
+  const calls = serve(t)
+  const api = checkoutCart(CHECKOUT, 'Falhou', () => storage)
+
+  const adding = api.add([{ skuId: 7, quantity: 1 }])
+  storage.setItem(CART_TOKEN, 'novo')
+  const reading = api.load()
+  calls[1].reply(200, bag(3))
+  assert.equal((await reading).cart?.count, 3)
+  calls[0].reply(200, bag(1))
+  assert.deepEqual(await adding, {})
+  assert.equal(new URL(api.checkoutUrl()).searchParams.get('cart_token'), 'novo')
+})
