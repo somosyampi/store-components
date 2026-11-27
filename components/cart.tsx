@@ -41,11 +41,19 @@ const SESSION = 'yampi_session'
 
 // Com o armazenamento bloqueado (alguns modos privados), o carrinho dura até a página recarregar.
 // ponytail: o token nunca é trocado; se o checkout recusar carrinhos já finalizados, gere outro quando `add` falhar.
+const savedToken = () => {
+  try {
+    return localStorage.getItem(TOKEN)
+  } catch {
+    return null
+  }
+}
+
 function cartToken() {
   const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  const stored = savedToken()
+  if (stored) return { token: stored, stored: true }
   try {
-    const stored = localStorage.getItem(TOKEN)
-    if (stored) return { token: stored, stored: true }
     return { token: localStorage.getItem(SESSION) || fresh(), stored: false }
   } catch {
     return { token: fresh(), stored: false }
@@ -62,7 +70,8 @@ function keepToken(token: string) {
 }
 
 function checkoutCart(checkout: Checkout, failed: string) {
-  const { token, stored } = cartToken()
+  const start = cartToken()
+  let token = start.token
 
   const url = (base: string, suffix = '') => {
     const target = new URL(base)
@@ -90,9 +99,11 @@ function checkoutCart(checkout: Checkout, failed: string) {
   }
 
   return {
-    load: async () => (stored ? send('GET', url(checkout.items_json)) : EMPTY),
-    add: (lines: Line[], group: Group = {}) =>
-      send('POST', url(checkout.items), {
+    load: async () => (start.stored ? send('GET', url(checkout.items_json)) : EMPTY),
+    add: (lines: Line[], group: Group = {}) => {
+      // Outra aba pode ter criado o carrinho depois que esta montou: a adição vai para o mesmo carrinho.
+      token = savedToken() ?? token
+      return send('POST', url(checkout.items), {
         product_option_id: lines.map((line) => line.skuId),
         quantity: lines.map((line) => line.quantity),
         ...(lines.some((line) => line.customization) && { customization: Object.fromEntries(lines.flatMap((line) => (line.customization ? [[line.skuId, line.customization]] : []))) }),
@@ -103,7 +114,8 @@ function checkoutCart(checkout: Checkout, failed: string) {
       }).then((cart) => {
         keepToken(token)
         return cart
-      }),
+      })
+    },
     update: (item: CartItem, quantity: number) =>
       send('PUT', url(checkout.items, `/${item.id}`), { product_option_id: item.id, oldQuantity: item.quantity, quantity }),
     remove: (item: CartItem) => send('DELETE', url(checkout.items, `/${item.id}/delete`), { product_option_id: item.id }),
