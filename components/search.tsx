@@ -18,6 +18,8 @@ export type SearchLabels = typeof LABELS
 type Props = {
   endpoint: string
   storeId: number
+  complete?: boolean
+  popular?: boolean
   labels?: Partial<SearchLabels>
 }
 
@@ -34,7 +36,7 @@ function TermFromRoute({ onChange }: { onChange(term: string): void }) {
 }
 
 /** Classes: search, suggestions. De uso geral: icon-button, eyebrow. */
-export function SearchBox({ endpoint, storeId, labels }: Props) {
+export function SearchBox({ endpoint, storeId, complete = true, popular = true, labels }: Props) {
   const t = { ...LABELS, ...labels }
   const router = useRouter()
   const list = useId()
@@ -45,10 +47,10 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
   const [completions, setCompletions] = useState<string[]>([])
   const term = q.trim()
   const typing = term.length > 1
-  const terms = !open ? [] : typing ? completions : (top ?? [])
+  const terms = !open ? [] : typing ? (complete ? completions : []) : popular ? (top ?? []) : []
 
   useEffect(() => {
-    if (!typing || !open) return
+    if (!complete || !typing || !open) return
 
     const request = new AbortController()
     const timer = setTimeout(() => {
@@ -65,11 +67,11 @@ export function SearchBox({ endpoint, storeId, labels }: Props) {
       clearTimeout(timer)
       request.abort()
     }
-  }, [term, typing, open, endpoint, storeId])
+  }, [complete, term, typing, open, endpoint, storeId])
 
   function onFocus() {
     setOpen(true)
-    if (top === null) {
+    if (popular && top === null) {
       setTop([])
       suggest({ endpoint, storeId }).then(setTop, () => {})
     }
