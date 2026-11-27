@@ -36,6 +36,8 @@ const LABELS = {
 export type CartLabels = typeof LABELS
 
 const TOKEN = 'yampi_cart_token'
+// A plataforma guarda aqui a sessão do visitante: o carrinho que nasce com ela liga a visita à compra.
+const SESSION = 'yampi_session'
 
 // Com o armazenamento bloqueado (alguns modos privados), o carrinho dura até a página recarregar.
 // ponytail: o token nunca é trocado; se o checkout recusar carrinhos já finalizados, gere outro quando `add` falhar.
@@ -45,7 +47,7 @@ function cartToken() {
     const stored = localStorage.getItem(TOKEN)
     if (stored) return { token: stored, stored: true }
 
-    const token = fresh()
+    const token = localStorage.getItem(SESSION) || fresh()
     localStorage.setItem(TOKEN, token)
     return { token, stored: false }
   } catch {
