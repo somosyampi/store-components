@@ -1,4 +1,4 @@
-const cents = (value: number) => Math.round(value * 100) / 100
+import { cents } from './format.ts'
 
 export type Tier = {
   quantity: number

@@ -1,4 +1,7 @@
+import { skuPrices } from './sku.ts'
 import type { Image, Prices, Ratings, Review, Variation } from './types'
+
+type Offered = Pick<Prices, 'price' | 'price_sale' | 'has_promotion'>
 
 type Sku = {
   id: number
@@ -6,7 +9,7 @@ type Sku = {
   barcode?: string | null
   blocked_sale: boolean
   combinations: string
-  prices: { data: Pick<Prices, 'price' | 'price_sale' | 'has_promotion'> }
+  prices: { data: Offered }
   images: { data: Image[] }
 }
 
@@ -21,6 +24,8 @@ type Input = {
   category?: string
   variations: Variation[]
   skus: Sku[]
+  /** Os da página (lib/prices.ts): com todos os SKUs no mesmo preço, a oferta leva estes, como a ProductView. */
+  prices?: Offered
   ratings?: Pick<Ratings, 'average_rating' | 'total'> | null
   /** As avaliações exibidas na página. */
   reviews?: Review[]
@@ -31,9 +36,7 @@ const SCHEMA = 'https://schema.org/'
 // ponytail: só cor e tamanho; outra variação (voltagem, sabor) segue só no nome da variante.
 const property = (variation: string) => (/^cor(es)?$/i.test(variation.trim()) ? 'color' : /tamanho|numera[cç][aã]o|^tam\.?$/i.test(variation.trim()) ? 'size' : null)
 
-function offer({ blocked_sale, prices }: Sku, url: string) {
-  const { price, price_sale, has_promotion } = prices.data
-
+function offer({ blocked_sale }: Sku, { price, price_sale, has_promotion }: Offered, url: string) {
   return {
     '@type': 'Offer',
     url,
@@ -71,15 +74,16 @@ function rated(ratings: Input['ratings'], reviews: Review[]) {
 }
 
 // O Google só trata cor e tamanho como variantes se cada uma tiver o seu endereço: daí o `?sku={id}`.
-export function productSchema({ id, name, url, images, description, brand, category, variations, skus, ratings, reviews = [] }: Input) {
+export function productSchema({ id, name, url, images, description, brand, category, variations, skus, prices, ratings, reviews = [] }: Input) {
   const shared = { ...(category && { category }) }
   const about = { name, ...(description && { description }), ...(brand && { brand: { '@type': 'Brand', name: brand } }), ...rated(ratings, reviews) }
   const photos = (sku?: Sku) => (sku?.images.data.length ? sku.images.data : images).map((image) => image.url)
+  const priced = (sku: Sku) => skuPrices(sku, skus, prices ?? sku.prices.data)
 
   if (!variations.length || skus.length < 2) {
     const [sku] = skus
 
-    return { '@type': 'Product', ...about, image: photos(sku), ...shared, ...(sku && { ...codes(sku), offers: offer(sku, url) }) }
+    return { '@type': 'Product', ...about, image: photos(sku), ...shared, ...(sku && { ...codes(sku), offers: offer(sku, priced(sku), url) }) }
   }
 
   const properties = variations.map((variation) => property(variation.name))
@@ -102,7 +106,7 @@ export function productSchema({ id, name, url, images, description, brand, categ
         image: photos(sku),
         ...Object.fromEntries(properties.flatMap((key, index) => (key && values[index] ? [[key, values[index]]] : []))),
         ...shared,
-        offers: offer(sku, `${url}?sku=${sku.id}`),
+        offers: offer(sku, priced(sku), `${url}?sku=${sku.id}`),
       }
     }),
   }

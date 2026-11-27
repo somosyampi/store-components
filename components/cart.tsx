@@ -2,7 +2,7 @@
 
 import { createContext, use, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { preconnect } from 'react-dom'
-import { EMPTY, toCart, type Cart, type CartItem, type CheckoutCart } from '../lib/cart'
+import { CART_TOKEN, EMPTY, checkoutCart, type Group, type Line, type Result } from '../lib/cart'
 import { brl } from '../lib/format'
 import { fill, plural } from '../lib/labels'
 import type { RichText as RichTextValue } from '../lib/rich-text'
@@ -10,11 +10,7 @@ import type { Checkout } from '../lib/types'
 import { BagIcon, CloseIcon } from './icons'
 import { RichText } from './rich-text'
 
-export type Line = { skuId: number; quantity: number; customization?: Record<string, string> }
-/** Os SKUs entram como um kit (`products/{id}/bundles`) ou como um "compre junto" (`products/{id}/combos`). */
-export type Group = { kit?: number; combo?: number }
-
-type CheckoutResponse = { cart?: CheckoutCart | null; error?: boolean; message?: string | { message?: string }[] }
+export type { Group, Line } from '../lib/cart'
 
 const LABELS = {
   title: 'Carrinho',
@@ -26,6 +22,8 @@ const LABELS = {
   increase: 'Aumentar quantidade de {name}',
   remove: 'Remover',
   combo: 'Compre junto',
+  kit: 'Kit',
+  freebie: 'Brinde',
   discount: 'Desconto',
   itemSavings: '{value} mais barato',
   savings: 'Você economizou',
@@ -34,94 +32,6 @@ const LABELS = {
   checkout: 'Finalizar compra',
 }
 export type CartLabels = typeof LABELS
-
-const TOKEN = 'yampi_cart_token'
-// A plataforma guarda aqui a sessão do visitante: o carrinho que nasce com ela liga a visita à compra.
-const SESSION = 'yampi_session'
-
-// Com o armazenamento bloqueado (alguns modos privados), o carrinho dura até a página recarregar.
-// ponytail: o token nunca é trocado; se o checkout recusar carrinhos já finalizados, gere outro quando `add` falhar.
-const savedToken = () => {
-  try {
-    return localStorage.getItem(TOKEN)
-  } catch {
-    return null
-  }
-}
-
-function cartToken() {
-  const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (byte) => byte.toString(16).padStart(2, '0')).join('')
-  const stored = savedToken()
-  if (stored) return { token: stored, stored: true }
-  try {
-    return { token: localStorage.getItem(SESSION) || fresh(), stored: false }
-  } catch {
-    return { token: fresh(), stored: false }
-  }
-}
-
-// O token só fica depois que o carrinho existe: antes, cada página consultaria o checkout por um carrinho que ele não tem.
-function keepToken(token: string) {
-  try {
-    localStorage.setItem(TOKEN, token)
-  } catch {
-    // Sem armazenamento, o carrinho vale até a página recarregar.
-  }
-}
-
-function checkoutCart(checkout: Checkout, failed: string) {
-  const start = cartToken()
-  let token = start.token
-
-  const url = (base: string, suffix = '') => {
-    const target = new URL(base)
-    target.pathname += suffix
-    target.searchParams.set('cart_token', token)
-    return target
-  }
-
-  async function send(method: string, target: URL, body?: object): Promise<Cart> {
-    const response = await fetch(target, {
-      method,
-      headers: { Accept: 'application/json', ...(body && { 'Content-Type': 'application/json' }) },
-      body: body && JSON.stringify({ ...body, skipShipment: true, store_token: checkout.store_token, cart_token: token }),
-      // Sem resposta do checkout, o carrinho mostra erro em vez de travar o botão de compra.
-      signal: AbortSignal.timeout?.(15_000),
-    }).catch(() => null)
-    const data: CheckoutResponse | null = (await response?.json().catch(() => null)) ?? null
-
-    if (!response?.ok || data?.error) {
-      const message = Array.isArray(data?.message) ? data.message[0]?.message : data?.message
-      throw new Error(message || failed)
-    }
-
-    return toCart(data?.cart)
-  }
-
-  return {
-    load: async () => (start.stored ? send('GET', url(checkout.items_json)) : EMPTY),
-    add: (lines: Line[], group: Group = {}) => {
-      // Outra aba pode ter criado o carrinho depois que esta montou: a adição vai para o mesmo carrinho.
-      token = savedToken() ?? token
-      return send('POST', url(checkout.items), {
-        product_option_id: lines.map((line) => line.skuId),
-        quantity: lines.map((line) => line.quantity),
-        ...(lines.some((line) => line.customization) && { customization: Object.fromEntries(lines.flatMap((line) => (line.customization ? [[line.skuId, line.customization]] : []))) }),
-        // Com `bundle_id` o checkout cobra o preço do kit; com `kit_id`, dá o desconto do "compre junto".
-        ...(group.kit && { bundle_id: group.kit }),
-        ...(group.combo && { kit_id: group.combo }),
-        metadata: { source_platform: 'headless' },
-      }).then((cart) => {
-        keepToken(token)
-        return cart
-      })
-    },
-    update: (item: CartItem, quantity: number) =>
-      send('PUT', url(checkout.items, `/${item.id}`), { product_option_id: item.id, oldQuantity: item.quantity, quantity }),
-    remove: (item: CartItem) => send('DELETE', url(checkout.items, `/${item.id}/delete`), { product_option_id: item.id }),
-    checkoutUrl: () => url(checkout.redirect_to).toString(),
-  }
-}
 
 type Api = ReturnType<typeof checkoutCart>
 
@@ -151,38 +61,65 @@ type ProviderProps = {
 /**
  * Classes: drawer, drawer-panel, drawer-head, drawer-empty, drawer-empty-action, drawer-items, thumbs,
  * thumbs-kit, drawer-price, drawer-item-saving, stepper, drawer-foot, drawer-discount, drawer-savings,
- * drawer-total. De uso geral: icon-button, text-button, button, alert, note, saving, prose. Atributo:
+ * drawer-total. De uso geral: icon-button, text-button, button, alert, note, saving, tag, prose. Atributo:
  * data-variant no drawer, com o valor de `variant`.
  */
 export function CartProvider({ checkout, labels, savings, empty, variant, children }: ProviderProps) {
   const t = { ...LABELS, ...labels }
   const title = useId()
   const api = useRef<Api | null>(null)
+  const pending = useRef(false)
   const dialog = useRef<HTMLDialogElement>(null)
+  // O navegador tira o foco do botão que fica desabilitado durante o pedido: ele volta a quem pediu e a quem abriu o carrinho.
+  const trigger = useRef<Element | null>(null)
+  const opener = useRef<Element | null>(null)
   const [cart, setCart] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function run(action: (api: Api) => Promise<Cart>) {
-    if (!api.current) return
+  const apply = (result: Result) => {
+    if (result.cart) setCart(result.cart)
+    if (result.error) setError(result.error)
+  }
+
+  async function run(action: (api: Api) => Promise<Result>) {
+    if (!api.current || pending.current) return
+    pending.current = true
+    trigger.current = document.activeElement
     setBusy(true)
     setError('')
     try {
-      setCart(await action(api.current))
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t.failed)
+      apply(await action(api.current))
     } finally {
+      pending.current = false
       setBusy(false)
     }
   }
 
   useEffect(() => {
-    api.current = checkoutCart(checkout, t.failed)
-    run((api) => api.load())
+    const current = checkoutCart(checkout, t.failed)
+    api.current = current
+    const load = () => current.load().then(apply)
+    // Outra aba pode ter mudado o carrinho: ele é relido quando ela cria um e quando o visitante volta para esta.
+    const created = (event: StorageEvent) => event.key === CART_TOKEN && load()
+    const back = () => document.visibilityState === 'visible' && load()
+    load()
+    addEventListener('storage', created)
+    document.addEventListener('visibilitychange', back)
+    return () => {
+      removeEventListener('storage', created)
+      document.removeEventListener('visibilitychange', back)
+    }
   }, [checkout, t.failed])
 
-  const open = () => {
-    if (!dialog.current?.open) dialog.current?.showModal()
+  useEffect(() => {
+    if (!busy && document.activeElement === document.body && trigger.current instanceof HTMLElement) trigger.current.focus()
+  }, [busy])
+
+  const show = (from: Element | null) => {
+    if (!dialog.current || dialog.current.open) return
+    opener.current = from
+    dialog.current.showModal()
   }
 
   return (
@@ -190,11 +127,12 @@ export function CartProvider({ checkout, labels, savings, empty, variant, childr
       value={{
         count: cart.count,
         busy,
-        open,
+        open: () => show(document.activeElement),
         warm: () => preconnect(new URL(checkout.items).origin),
         add: async (lines, group) => {
+          const from = document.activeElement
           await run((api) => api.add(lines, group))
-          open()
+          show(from)
         },
       }}
     >
@@ -207,6 +145,10 @@ export function CartProvider({ checkout, labels, savings, empty, variant, childr
         aria-labelledby={title}
         // O clique que chega no próprio <dialog> é o clique no fundo escurecido.
         onClick={(event) => event.target === event.currentTarget && event.currentTarget.close()}
+        onClose={() => {
+          setError('')
+          if (document.activeElement === document.body && opener.current instanceof HTMLElement) opener.current.focus()
+        }}
       >
         <div className="drawer-panel">
           <header className="drawer-head">
@@ -235,42 +177,50 @@ export function CartProvider({ checkout, labels, savings, empty, variant, childr
           ) : (
             <>
               <ul className="drawer-items">
-                {cart.items.map((item) => (
-                  <li key={item.id}>
-                    {/* <img> simples: o checkout já entrega as miniaturas no tamanho. */}
-                    <div className={item.images.length > 1 ? 'thumbs thumbs-kit' : 'thumbs'}>
-                      {item.images.slice(0, 2).map((src) => (
-                        <img key={src} src={src} alt="" width={72} height={72} loading="lazy" />
-                      ))}
-                    </div>
-                    <div>
-                      <p>{item.combo ? t.combo : item.name}</p>
-                      {item.parts && <p className="note">{item.parts.join(' + ')}</p>}
-                      <p className="drawer-price">{brl(item.price)}</p>
-                      {savings?.items && item.listPrice && <p className="drawer-item-saving saving">{fill(t.itemSavings, { value: brl(item.listPrice - item.price) })}</p>}
-                      <div className="stepper">
-                        {!item.combo && (
-                          <>
-                            <button
-                              disabled={busy}
-                              aria-label={fill(t.decrease, { name: item.name })}
-                              onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
-                            >
-                              −
-                            </button>
-                            <span aria-label={fill(t.quantity, { count: item.quantity })}>{item.quantity}</span>
-                            <button disabled={busy} aria-label={fill(t.increase, { name: item.name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
-                              +
-                            </button>
-                          </>
-                        )}
-                        <button className="text-button" disabled={busy} onClick={() => run((api) => api.remove(item))}>
-                          {t.remove}
-                        </button>
+                {cart.items.map((item) => {
+                  const name = item.combo ? t.combo : item.name || t.kit
+
+                  return (
+                    <li key={item.id}>
+                      {/* <img> simples: o checkout já entrega as miniaturas no tamanho. */}
+                      <div className={item.images.length > 1 ? 'thumbs thumbs-kit' : 'thumbs'}>
+                        {item.images.slice(0, 2).map((src) => (
+                          <img key={src} src={src} alt="" width={72} height={72} loading="lazy" />
+                        ))}
                       </div>
-                    </div>
-                  </li>
-                ))}
+                      <div>
+                        <p>{name}</p>
+                        {item.parts && <p className="note">{item.parts.join(' + ')}</p>}
+                        {item.freebie ? <p className="tag">{t.freebie}</p> : <p className="drawer-price">{brl(item.price)}</p>}
+                        {savings?.items && item.listPrice && <p className="drawer-item-saving saving">{fill(t.itemSavings, { value: brl(item.listPrice - item.price) })}</p>}
+                        {!item.freebie && (
+                          <div className="stepper">
+                            {!item.combo && (
+                              <>
+                                <button
+                                  disabled={busy}
+                                  aria-label={fill(t.decrease, { name })}
+                                  onClick={() => run((api) => (item.quantity > 1 ? api.update(item, item.quantity - 1) : api.remove(item)))}
+                                >
+                                  −
+                                </button>
+                                <span role="status" aria-label={fill(t.quantity, { count: item.quantity })}>
+                                  {item.quantity}
+                                </span>
+                                <button disabled={busy} aria-label={fill(t.increase, { name })} onClick={() => run((api) => api.update(item, item.quantity + 1))}>
+                                  +
+                                </button>
+                              </>
+                            )}
+                            <button className="text-button" disabled={busy} onClick={() => run((api) => api.remove(item))}>
+                              {t.remove}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
 
               <footer className="drawer-foot">
@@ -288,7 +238,7 @@ export function CartProvider({ checkout, labels, savings, empty, variant, childr
                 )}
                 <p className="drawer-total">
                   <span>{t.subtotal}</span>
-                  <strong>{brl(cart.total)}</strong>
+                  <strong role="status">{brl(cart.total)}</strong>
                 </p>
                 <p className="note">{t.note}</p>
                 <button className="button" disabled={busy} onClick={() => api.current && location.assign(api.current.checkoutUrl())}>

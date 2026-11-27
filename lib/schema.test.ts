@@ -91,6 +91,20 @@ test('produto com variações: um ProductGroup com uma variante por SKU, cada um
   assert.deepEqual(other.hasVariant.map((variant: Record<string, any>) => variant.name), ['Mocassim 110V', 'Mocassim 220V'])
 })
 
+test('preço da página: com os SKUs no mesmo preço, a oferta leva o que a página mostra', () => {
+  const shown = { price: 389.9, price_sale: 649.9, has_promotion: true }
+  const sizes = [{ id: 2, name: 'Numeração', values: { data: [{ id: 20, value: '39' }, { id: 21, value: '40' }] } }]
+
+  const single = json(productSchema({ ...base, variations: [], skus: [sku(1, '', 434.3)], prices: shown }))
+  assert.deepEqual([single.offers.price, single.offers.priceSpecification.price], [389.9, 649.9])
+
+  const same = json(productSchema({ ...base, variations: sizes, skus: [sku(1, '20', 434.3), sku(2, '21', 434.3)], prices: shown }))
+  assert.deepEqual(same.hasVariant.map((variant: Record<string, any>) => variant.offers.price), [389.9, 389.9])
+
+  const mixed = json(productSchema({ ...base, variations: sizes, skus: [sku(1, '20', 434.3), sku(2, '21', 459.9)], prices: shown }))
+  assert.deepEqual(mixed.hasVariant.map((variant: Record<string, any>) => variant.offers.price), [434.3, 459.9])
+})
+
 test('loja: OnlineStore com o que o lojista cadastrou, sem campos pela metade', () => {
   const store = storeSchema({
     name: 'Eleganzio',

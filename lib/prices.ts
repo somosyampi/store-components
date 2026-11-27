@@ -1,5 +1,6 @@
 // Só esta API parcela o preço já com as promoções da loja: a principal parcela o preço de cadastro.
 
+import { cents } from './format.ts'
 import type { Installment, Prices } from './types'
 
 export const PRICES_URL = 'https://pay.yampi.com.br/api/v2/prices'
@@ -14,8 +15,6 @@ export type CheckoutPrices = {
   installments_data?: { text?: string; installments?: Installment[] } | []
 }
 
-const cents = (value: number) => Math.round(value * 100) / 100
-
 export function fromCheckout(data: CheckoutPrices): { prices: Prices; installments: Installment[] } {
   const plan = Array.isArray(data.installments_data) ? undefined : data.installments_data
   const pix = data.payment_methods?.pix
@@ -28,7 +27,7 @@ export function fromCheckout(data: CheckoutPrices): { prices: Prices; installmen
       has_promotion: data.has_promotion,
       percent_discount: data.percent_discount,
       installments: { data: { text: plan?.text } },
-      pix: pix && { price: pix.price, discount_percent: pix.discount },
+      pix: pix && { price: cents(pix.price), discount_percent: pix.discount },
     },
     installments: (plan?.installments ?? []).map(({ installment, text, amount, base_value, amount_formated }) => ({ installment, text, amount, base_value, amount_formated })),
   }

@@ -8,9 +8,12 @@ import { CRUMBS_LABELS, Crumbs, type Crumb } from './crumbs'
 import { FILTERS_ID, FILTERS_LABELS, Filters } from './filters'
 import { ProductGrid, type CardLabels } from './product-card'
 
+const SORT_LABELS = Object.fromEntries(Object.entries(SORTS).map(([sort, label]) => [`sort_${sort}`, label])) as Record<`sort_${Sort}`, string>
+
 export const LISTING_LABELS = {
   ...CRUMBS_LABELS,
   ...FILTERS_LABELS,
+  ...SORT_LABELS,
   count_one: '{count} produto',
   count_other: '{count} produtos',
   sortBy: 'Ordenar por',
@@ -53,7 +56,7 @@ type Props = {
 export function Listing({ title, state, base, extra, facets, trail = [], siteUrl, description, sorts = Object.keys(SORTS) as Sort[], quickBuy, eager = 4, sizes, labels, cardLabels, children, products, total, pages }: Props) {
   const t = { ...LISTING_LABELS, ...labels }
   const href = (next: ListingState) => listingHref(base, next, extra)
-  const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, SORTS[sort]])]
+  const options: [Sort | undefined, string][] = [[undefined, t.featured], ...sorts.map((sort): [Sort, string] => [sort, t[`sort_${sort}`]])]
   const filtering = Object.values(state.filters ?? {}).flat().length
 
   return (

@@ -33,6 +33,7 @@ test('kit: o preço de cada item segue a regra do kit', () => {
   assert.equal(kitPrice({ price_type: 'discount', price: 1620, discount: 5 }, 1603.8), 1523.61)
   assert.equal(kitPrice({ price_type: 'custom', price: 350, discount: 0 }, 499.9), 350)
   assert.equal(kitPrice({ price_type: 'sku', price: 559.9, discount: 0 }, 554.3), 554.3)
+  assert.equal(kitPrice({ price_type: 'discount', price: 0, discount: 3 }, 2.5), 2.43)
 })
 
 test('kits da API: o preço de cada item no kit e avulso; kit inativo ou com item indisponível fica de fora', () => {

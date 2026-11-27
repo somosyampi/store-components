@@ -19,5 +19,8 @@ export function soldOut(skus: Sku[], variations: Variation[], picked: number[]) 
   return skuFor(skus, variations, picked)?.blocked_sale ?? true
 }
 
+type Priced<P> = { prices: { data: P } }
+
 // Com todos os SKUs no mesmo preço vale o do produto, que o tema lê do checkout (lib/prices.ts).
-export const skuPrices = (sku: Sku | undefined, skus: Sku[], prices: Prices) => (sku && skus.some((other) => other.prices.data.price !== skus[0].prices.data.price) ? sku.prices.data : prices)
+export const skuPrices = <P extends Pick<Prices, 'price'>>(sku: Priced<P> | undefined, skus: Priced<P>[], prices: P) =>
+  sku && skus.some((other) => other.prices.data.price !== skus[0].prices.data.price) ? sku.prices.data : prices

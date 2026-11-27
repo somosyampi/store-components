@@ -5,7 +5,7 @@ import type { Banner, Block, Curated, IconShape } from '../lib/home'
 import { fill } from '../lib/labels'
 import { toRoute } from '../lib/routes'
 import type { Prices, Review } from '../lib/types'
-import { Price } from './price'
+import { Price, type PriceLabels } from './price'
 import { Prose } from './prose'
 import { Rating, type RatingLabels } from './rating'
 import { RichText } from './rich-text'
@@ -38,8 +38,9 @@ function Art({ banner, storeUrl, sizes, priority = false, className }: ArtProps)
 }
 
 const HERO_LABELS = { region: 'Destaques', slide: 'Ir para o banner {index} de {total}' }
+export type HeroLabels = typeof HERO_LABELS
 
-type HeroProps = { banners: Banner[]; storeUrl: string; labels?: Partial<typeof HERO_LABELS> }
+type HeroProps = { banners: Banner[]; storeUrl: string; labels?: Partial<HeroLabels> }
 
 /** Classes: hero e, com mais de um banner, hero-carousel (com o total em `--slides`), hero-slides e hero-nav. */
 export function Hero({ banners, storeUrl, labels }: HeroProps) {
@@ -126,10 +127,11 @@ type FeatureProps = {
   picks: (Curated & { prices: Prices })[]
   eyebrow?: string
   sizes?: { banner: string; pick: string }
+  labels?: Partial<PriceLabels>
 }
 
 /** Classes: feature, feature-flip, feature-media, frame, feature-text, picks, pick-media, pick-name e a de Price. De uso geral: eyebrow. */
-export function Feature({ block, picks, eyebrow = 'Em destaque', sizes = { banner: '(min-width: 900px) 42vw, 100vw', pick: '72px' } }: FeatureProps) {
+export function Feature({ block, picks, eyebrow = 'Em destaque', sizes = { banner: '(min-width: 900px) 42vw, 100vw', pick: '72px' }, labels }: FeatureProps) {
   return (
     <section className={block.flip ? 'feature feature-flip' : 'feature'}>
       {block.banner && (
@@ -148,7 +150,7 @@ export function Feature({ block, picks, eyebrow = 'Em destaque', sizes = { banne
                 <span className="pick-media">{pick.image && <Image src={pick.image} alt="" fill sizes={sizes.pick} />}</span>
                 <span className="pick-name">{pick.name}</span>
               </Link>
-              <Price prices={pick.prices} />
+              <Price prices={pick.prices} labels={labels} />
             </li>
           ))}
         </ul>

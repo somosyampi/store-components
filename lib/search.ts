@@ -50,7 +50,7 @@ async function get<T>({ endpoint, storeId, signal }: Source, path: string, param
 export async function suggest(source: Source, q = ''): Promise<string[]> {
   const { data } = await get<{ data: unknown }>(source, 'products/suggestions', q ? [['q', q]] : [])
 
-  return Array.isArray(data) ? data.filter((term) => typeof term === 'string').slice(0, 9) : []
+  return Array.isArray(data) ? [...new Set(data.filter((term) => typeof term === 'string'))].slice(0, 9) : []
 }
 
 // Sem termo, /products não registra nada.
@@ -72,9 +72,12 @@ export async function catalog(source: Source): Promise<string[]> {
   return slugs
 }
 
-type Options = Source & ListingState & { q: string; limit?: number }
+const FACET_LABELS = { categories: 'Categorias', brand: 'Marca' }
+export type FacetLabels = typeof FACET_LABELS
 
-export async function search({ q, limit = 24, page, sort_by, filters = {}, ...source }: Options) {
+type Options = Source & ListingState & { q: string; limit?: number; labels?: Partial<FacetLabels> }
+
+export async function search({ q, limit = 24, page, sort_by, filters = {}, labels, ...source }: Options) {
   // "Cor:Marrom" + "Cor:Preto" + "Fecho:Zíper" → "Cor:Marrom;Preto|Fecho:Zíper"
   const attributes = Object.entries(Object.groupBy(filters.attributes ?? [], (pair) => pair.split(':')[0]))
     .map(([name, pairs = []]) => `${name}:${pairs.map((pair) => pair.slice(name.length + 1)).join(';')}`)
@@ -94,16 +97,16 @@ export async function search({ q, limit = 24, page, sort_by, filters = {}, ...so
     ...(attributes ? [['attributes', attributes] as [string, string]] : []),
   ])
 
-  return { hits: data.data.map((hit) => hit.content), total: data.total, pages: data.last_page, facets: facets(aggs ?? {}) }
+  return { hits: data.data.map((hit) => hit.content), total: data.total, pages: data.last_page, facets: facets(aggs ?? {}, { ...FACET_LABELS, ...labels }) }
 }
 
-function facets({ categories = [], brands, attributes = [] }: Aggs): Facet[] {
+function facets({ categories = [], brands, attributes = [] }: Aggs, t: FacetLabels): Facet[] {
   const options = (buckets: Bucket[], value = (key: string) => key) =>
     buckets.map(({ key, doc_count }) => ({ value: value(key), label: key, count: doc_count }))
 
   return usefulGroups([
-    { param: 'categories_name', label: 'Categorias', options: options(categories) },
-    { param: 'brand_name', label: 'Marca', options: options(brands?.buckets ?? []) },
+    { param: 'categories_name', label: t.categories, options: options(categories) },
+    { param: 'brand_name', label: t.brand, options: options(brands?.buckets ?? []) },
     ...attributes.map(({ key, values }) => ({
       param: 'attributes' as const,
       label: key,

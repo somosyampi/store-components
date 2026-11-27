@@ -72,6 +72,8 @@ export function toggleFilter(state: ListingState, key: FilterKey, value: string)
 
 // Os links que o lojista cadastra (banners, seções da home) apontam para a vitrine hospedada pela Yampi.
 export function toRoute(link: string, storeUrl: string) {
+  // O link malformado ("https:// loja.com") segue como veio: lançar aqui derrubaria a página inteira.
+  if (!URL.canParse(link, storeUrl)) return link
   const url = new URL(link, storeUrl)
   if (url.origin !== new URL(storeUrl).origin) return link
 
